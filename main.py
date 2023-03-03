@@ -17,17 +17,13 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.pyqtSlot()
     def show_image(self):
         self.image = cv2.imread('./images/Shepp_logan.png')
-
-        # self.image = cv2.imread('./T1Matrix.jpg')
-        # self.image = cv2.rotate(self.image, cv2.ROTATE_90_CLOCKWISE)
-
         height, width, channel = self.image.shape
         self.heightttt = height
         bytesPerLine = 3 * width
         self.image = QtGui.QImage(self.image.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888).rgbSwapped()
         self.ui.image_frame.setPixmap(QtGui.QPixmap.fromImage(self.image))
         self.ui.image_frame.setScaledContents(True)
-        # self.create_the_corresponding_matrices(height, width)
+        self.create_the_corresponding_matrices(height, width)
     
     def create_the_corresponding_matrices(self, height, width):
         # Create a matrix with the same shape as the loaded image
@@ -50,16 +46,26 @@ class MainWindow(QtWidgets.QMainWindow):
                         self.T2Matrix[x, y] = t2
                         self.PDMatrix[x, y] = pd
         
+        self.create_the_corresponding_images()
         # write each matrix in a txt file
         np.savetxt('T1Matrix.txt', self.T1Matrix, fmt='%d')
         np.savetxt('T2Matrix.txt', self.T2Matrix, fmt='%d')
         np.savetxt('PDMatrix.txt', self.PDMatrix, fmt='%d')
-        self.create_the_corresponding_images()
 
     def create_the_corresponding_images(self):
-        cv2.imwrite('T1Matrix.jpg', self.T1Matrix)
-        cv2.imwrite('T2Matrix.jpg', self.T2Matrix)
-        cv2.imwrite('PDMatrix.jpg', self.PDMatrix)
+        # The issue you are experiencing might be related to the difference in how OpenCV and Qt handle image orientation. OpenCV uses the BGR color format by default, while Qt uses the RGB format. This can cause the image to appear mirrored.
+        
+        self.T1Matrix = cv2.flip(self.T1Matrix, 1)
+        self.T1Matrix = cv2.rotate(self.T1Matrix, cv2.ROTATE_90_COUNTERCLOCKWISE) # Rotate clockwise
+        cv2.imwrite('./images/T1Matrix.jpg', self.T1Matrix)
+        
+        self.T2Matrix = cv2.flip(self.T2Matrix, 1)
+        self.T1Matrix = cv2.rotate(self.T1Matrix, cv2.ROTATE_90_COUNTERCLOCKWISE) # Rotate clockwise
+        cv2.imwrite('./images/T2Matrix.jpg', self.T2Matrix)
+
+        self.PDMatrix = cv2.flip(self.PDMatrix, 1)
+        self.PDMatrix = cv2.rotate(self.PDMatrix, cv2.ROTATE_90_CLOCKWISE) # Rotate clockwise
+        cv2.imwrite('./images/PDMatrix.jpg', self.PDMatrix)
 
     def load_matrices(self):
         self.T1Matrix = np.loadtxt('T1Matrix.txt')
