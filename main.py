@@ -69,9 +69,9 @@ class MainWindow(QtWidgets.QMainWindow):
         cv2.imwrite('./images/PDMatrix.jpg', self.PDMatrix)
 
     def load_matrices_from_images(self):
-        self.T1Matrix = np.loadtxt('T1Matrix.txt')
-        self.T2Matrix = np.loadtxt('T2Matrix.txt')
-        self.PDMatrix = np.loadtxt('PDMatrix.txt')
+        self.T1Matrix = cv2.imread('./images/T1Matrix.jpg', 0)
+        self.T2Matrix = cv2.imread('./images/T2Matrix.jpg', 0)
+        self.PDMatrix = cv2.imread('./images/PDMatrix.jpg', 0)
     
     def get_pixel_intensity(self, event):
         x = event.pos().x()
