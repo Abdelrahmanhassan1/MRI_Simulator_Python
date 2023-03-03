@@ -15,10 +15,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @QtCore.pyqtSlot()
     def show_image(self):
-        # self.image = cv2.imread('./images/128px-Shepp_logan.png')
-        # self.image = QtGui.QImage(self.image.data, self.image.shape[1], self.image.shape[0], QtGui.QImage.Format_RGB888).rgbSwapped()
-        # self.ui.image_frame.setPixmap(QtGui.QPixmap.fromImage(self.image))
-        # self.ui.image_frame.setScaledContents(True)
         self.image = cv2.imread('./images/Shepp_logan.png')
         height, width, channel = self.image.shape
         self.heightttt = height
