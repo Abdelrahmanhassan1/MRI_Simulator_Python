@@ -11,13 +11,16 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.setupUi(self)
         self.show_image()
         self.load_matrices()
-        print(self.T1Matrix[100, 1000])
         self.ui.image_frame.mousePressEvent = self.get_pixel_intensity
-
+        
 
     @QtCore.pyqtSlot()
     def show_image(self):
         self.image = cv2.imread('./images/Shepp_logan.png')
+
+        # self.image = cv2.imread('./T1Matrix.jpg')
+        # self.image = cv2.rotate(self.image, cv2.ROTATE_90_CLOCKWISE)
+
         height, width, channel = self.image.shape
         self.heightttt = height
         bytesPerLine = 3 * width
@@ -36,7 +39,7 @@ class MainWindow(QtWidgets.QMainWindow):
         intensities = [0, 101, 76, 51, 25, 255]
         t1matrix = [0, 50, 100, 150, 200, 255]
         t2matrix = [255, 200, 150, 100, 50, 0]
-        pdmatrix = [255, 255, 255, 255, 255]
+        pdmatrix = [255, 255, 255, 255, 255, 255]
 
         for intensity, t1, t2, pd in zip(intensities, t1matrix, t2matrix, pdmatrix):
             for y in range(height):
@@ -51,6 +54,12 @@ class MainWindow(QtWidgets.QMainWindow):
         np.savetxt('T1Matrix.txt', self.T1Matrix, fmt='%d')
         np.savetxt('T2Matrix.txt', self.T2Matrix, fmt='%d')
         np.savetxt('PDMatrix.txt', self.PDMatrix, fmt='%d')
+        self.create_the_corresponding_images()
+
+    def create_the_corresponding_images(self):
+        cv2.imwrite('T1Matrix.jpg', self.T1Matrix)
+        cv2.imwrite('T2Matrix.jpg', self.T2Matrix)
+        cv2.imwrite('PDMatrix.jpg', self.PDMatrix)
 
     def load_matrices(self):
         self.T1Matrix = np.loadtxt('T1Matrix.txt')
