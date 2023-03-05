@@ -2,7 +2,11 @@ from PyQt5 import QtGui, QtCore, QtWidgets
 import cv2
 import sys
 import numpy as np
+import pyqtgraph as pg
+from pyqtgraph import *
+import pyqtgraph.exporters
 from mainWindow import Ui_MainWindow
+
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, *args, **kwargs):
@@ -14,18 +18,20 @@ class MainWindow(QtWidgets.QMainWindow):
         self.show_image()
         self.load_matrices_from_images()
         self.ui.image_frame.mousePressEvent = self.get_pixel_intensity
-        
+
     @QtCore.pyqtSlot()
     def show_image(self):
-        self.image = cv2.imread('./images/Shepp_logan.png')
+        self.image = cv2.imread('./images/256px-Shepp_logan.png')
         height, width, channel = self.image.shape
         self.heightttt = height
         bytesPerLine = 3 * width
-        self.image = QtGui.QImage(self.image.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888).rgbSwapped()
+        self.image = QtGui.QImage(self.image.data, width, height,
+                                  bytesPerLine, QtGui.QImage.Format_RGB888).rgbSwapped()
         self.ui.image_frame.setPixmap(QtGui.QPixmap.fromImage(self.image))
         self.ui.image_frame.setScaledContents(True)
+        # self.setCentralWidget(self.ui.image_frame)
         # self.create_the_corresponding_matrices(height, width)
-    
+
     def create_the_corresponding_matrices(self, height, width):
         # Create a matrix with the same shape as the loaded image
         self.T1Matrix = np.zeros((height, width))
@@ -46,7 +52,7 @@ class MainWindow(QtWidgets.QMainWindow):
                         self.T1Matrix[x, y] = t1
                         self.T2Matrix[x, y] = t2
                         self.PDMatrix[x, y] = pd
-        
+
         self.create_the_corresponding_images()
         # write each matrix in a txt file
         np.savetxt('T1Matrix.txt', self.T1Matrix, fmt='%d')
@@ -55,27 +61,32 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def create_the_corresponding_images(self):
         # The issue you are experiencing might be related to the difference in how OpenCV and Qt handle image orientation. OpenCV uses the BGR color format by default, while Qt uses the RGB format. This can cause the image to appear mirrored.
-        
+
         self.T1Matrix = cv2.flip(self.T1Matrix, 1)
-        self.T1Matrix = cv2.rotate(self.T1Matrix, cv2.ROTATE_90_COUNTERCLOCKWISE) # Rotate clockwise
+        self.T1Matrix = cv2.rotate(
+            self.T1Matrix, cv2.ROTATE_90_COUNTERCLOCKWISE)  # Rotate clockwise
         cv2.imwrite('./images/T1Matrix.jpg', self.T1Matrix)
-        
+
         self.T2Matrix = cv2.flip(self.T2Matrix, 1)
-        self.T2Matrix = cv2.rotate(self.T2Matrix, cv2.ROTATE_90_COUNTERCLOCKWISE) # Rotate clockwise
+        self.T2Matrix = cv2.rotate(
+            self.T2Matrix, cv2.ROTATE_90_COUNTERCLOCKWISE)  # Rotate clockwise
         cv2.imwrite('./images/T2Matrix.jpg', self.T2Matrix)
 
         self.PDMatrix = cv2.flip(self.PDMatrix, 1)
-        self.PDMatrix = cv2.rotate(self.PDMatrix, cv2.ROTATE_90_COUNTERCLOCKWISE) # Rotate clockwise
+        self.PDMatrix = cv2.rotate(
+            self.PDMatrix, cv2.ROTATE_90_COUNTERCLOCKWISE)  # Rotate clockwise
         cv2.imwrite('./images/PDMatrix.jpg', self.PDMatrix)
 
     def load_matrices_from_images(self):
         self.T1Matrix = cv2.imread('./images/T1Matrix.jpg', 0)
         self.T2Matrix = cv2.imread('./images/T2Matrix.jpg', 0)
         self.PDMatrix = cv2.imread('./images/PDMatrix.jpg', 0)
-    
+
     def get_pixel_intensity(self, event):
         x = event.pos().x()
         y = event.pos().y()
+        print(f"X: {x}")
+        print(f"Y: {y}")
         scaling_factor = self.heightttt / self.ui.image_frame.height()
         x_scaled = int(x * scaling_factor)
         y_scaled = int(y * scaling_factor)
@@ -93,14 +104,15 @@ class MainWindow(QtWidgets.QMainWindow):
         print(f"T2: {t2}")
         print(f"PD: {pd}")
         print(f"Intensity: {intensity}")
-    
+
     def handle_combo_box(self):
         if self.ui.comboBox.currentIndex() == 0:
             self.image = cv2.imread('./images/Shepp_logan.png')
             height, width, channel = self.image.shape
             self.heightttt = height
             bytesPerLine = 3 * width
-            self.image = QtGui.QImage(self.image.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888).rgbSwapped()
+            self.image = QtGui.QImage(
+                self.image.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888).rgbSwapped()
             self.ui.image_frame.setPixmap(QtGui.QPixmap.fromImage(self.image))
             self.ui.image_frame.setScaledContents(True)
         elif self.ui.comboBox.currentIndex() == 1:
@@ -108,8 +120,10 @@ class MainWindow(QtWidgets.QMainWindow):
             height, width, channel = self.T1Matrix.shape
             self.heightttt = height
             bytesPerLine = 3 * width
-            self.T1Matrix = QtGui.QImage(self.T1Matrix.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888).rgbSwapped()
-            self.ui.image_frame.setPixmap(QtGui.QPixmap.fromImage(self.T1Matrix))
+            self.T1Matrix = QtGui.QImage(
+                self.T1Matrix.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888).rgbSwapped()
+            self.ui.image_frame.setPixmap(
+                QtGui.QPixmap.fromImage(self.T1Matrix))
             self.ui.image_frame.setScaledContents(True)
 
         elif self.ui.comboBox.currentIndex() == 2:
@@ -117,17 +131,24 @@ class MainWindow(QtWidgets.QMainWindow):
             height, width, channel = self.T2Matrix.shape
             self.heightttt = height
             bytesPerLine = 3 * width
-            self.T2Matrix = QtGui.QImage(self.T2Matrix.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888).rgbSwapped()
-            self.ui.image_frame.setPixmap(QtGui.QPixmap.fromImage(self.T2Matrix))
-            self.ui.image_frame.setScaledContents(True)        
+            self.T2Matrix = QtGui.QImage(
+                self.T2Matrix.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888).rgbSwapped()
+            self.ui.image_frame.setPixmap(
+                QtGui.QPixmap.fromImage(self.T2Matrix))
+            self.ui.image_frame.setScaledContents(True)
         elif self.ui.comboBox.currentIndex() == 3:
             self.PDMatrix = cv2.imread('./images/PDMatrix.jpg')
             height, width, channel = self.PDMatrix.shape
             self.heightttt = height
             bytesPerLine = 3 * width
-            self.PDMatrix = QtGui.QImage(self.PDMatrix.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888).rgbSwapped()
-            self.ui.image_frame.setPixmap(QtGui.QPixmap.fromImage(self.PDMatrix))
+            self.PDMatrix = QtGui.QImage(
+                self.PDMatrix.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888).rgbSwapped()
+            self.ui.image_frame.setPixmap(
+                QtGui.QPixmap.fromImage(self.PDMatrix))
             self.ui.image_frame.setScaledContents(True)
+
+    # MRI Sequence
+    
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
