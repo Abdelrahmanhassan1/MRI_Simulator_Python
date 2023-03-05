@@ -6,6 +6,7 @@ import pyqtgraph as pg
 from pyqtgraph import *
 import pyqtgraph.exporters
 from mainWindow import Ui_MainWindow
+import math
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -18,6 +19,21 @@ class MainWindow(QtWidgets.QMainWindow):
         self.show_image()
         self.load_matrices_from_images()
         self.ui.image_frame.mousePressEvent = self.get_pixel_intensity
+        self.plot_horizontal_lines()
+        self.redPen = pg.mkPen(color=(255, 0, 0))  # RED
+        self.greenPen = pg.mkPen(color=(0, 255, 0))  # Green
+        self.bluePen = pg.mkPen(color=(0, 0, 255))  # BLue
+        self.blackPen = pg.mkPen(color=(0, 0, 0))  # Black
+        self.orangePen = pg.mkPen(color=(255, 165, 0))  # Orange
+
+        self.pens = [
+            self.redPen,
+            self.greenPen,
+            self.bluePen,
+            self.blackPen,
+            self.orangePen
+        ]
+        # plot horizontal lines in graphics view widget
 
     @QtCore.pyqtSlot()
     def show_image(self):
@@ -147,8 +163,32 @@ class MainWindow(QtWidgets.QMainWindow):
                 QtGui.QPixmap.fromImage(self.PDMatrix))
             self.ui.image_frame.setScaledContents(True)
 
-    # MRI Sequence
+    def draw_sine_wave(self):
+        x = np.linspace(0, 10, 101)
+        y = np.sin(x)
+        self.ui.graphicsView.plot(
+            x, y, pen=pg.mkPen(color=(0, 0, 0)))
+
+    def draw_square_wave(self):
+        x = numpy.linspace(0, 20, 20)
+        y = numpy.array([5 if math.floor(2 * t) % 2 == 0 else 0 for t in x])
+        self.ui.graphicsView.plot(
+            x, y, pen=pg.mkPen(color=(0, 0, 0)))
     
+    # MRI Sequence
+    def plot_horizontal_lines(self):
+        self.ui.graphicsView.plot(
+            [0, 255], [0, 0], pen=pg.mkPen(color=(255, 0, 0)))
+        self.draw_square_wave()
+        self.ui.graphicsView.plot(
+            [0, 255], [10, 10], pen=pg.mkPen(color=(255, 0, 0)))
+        self.ui.graphicsView.plot(
+            [0, 255], [20, 20], pen=pg.mkPen(color=(255, 0, 0)))
+        self.ui.graphicsView.plot(
+            [0, 255], [30, 30], pen=pg.mkPen(color=(255, 0, 0)))
+        self.ui.graphicsView.plot(
+            [0, 255], [40, 40], pen=pg.mkPen(color=(255, 0, 0)))
+
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)

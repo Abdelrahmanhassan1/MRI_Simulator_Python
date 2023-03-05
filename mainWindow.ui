@@ -24,15 +24,16 @@
        <attribute name="title">
         <string>MRI Sequence</string>
        </attribute>
-       <layout class="QGridLayout" name="gridLayout">
-        <item row="0" column="0">
-         <layout class="QVBoxLayout" name="verticalLayout_2">
-          <item>
-           <widget class="PlotWidget" name="graphicsView"/>
-          </item>
-         </layout>
-        </item>
-       </layout>
+       <widget class="PlotWidget" name="graphicsView">
+        <property name="geometry">
+         <rect>
+          <x>430</x>
+          <y>140</y>
+          <width>351</width>
+          <height>261</height>
+         </rect>
+        </property>
+       </widget>
       </widget>
       <widget class="QWidget" name="tab_2">
        <attribute name="title">
