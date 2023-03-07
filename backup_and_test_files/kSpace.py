@@ -35,7 +35,7 @@ print(rows, columns)
 Mo = []
 k_space = []
 
-for phase in range(0, 360, 36):
+for phase in range(0, 360-36, 36):
     sum = 0
     for i in range(rows):
         for j in range(columns):
