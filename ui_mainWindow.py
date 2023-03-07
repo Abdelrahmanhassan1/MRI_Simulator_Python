@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file '.\mainWindow.ui'
+# Form implementation generated from reading ui file 'd:\My-Github\MRI_Simulator_Python\mainWindow.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.7
 #
@@ -206,13 +206,3 @@ class Ui_MainWindow(object):
         self.label_6.setText(_translate("MainWindow", "0"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), _translate("MainWindow", "Phontom"))
 from pyqtgraph import PlotWidget
-
-
-if __name__ == "__main__":
-    import sys
-    app = QtWidgets.QApplication(sys.argv)
-    MainWindow = QtWidgets.QMainWindow()
-    ui = Ui_MainWindow()
-    ui.setupUi(MainWindow)
-    MainWindow.show()
-    sys.exit(app.exec_())
