@@ -194,18 +194,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 QtGui.QPixmap.fromImage(self.PDMatrix))
             self.ui.phantom_image_label.setScaledContents(True)
 
-    def draw_sine_wave(self):
-        x = np.linspace(0, 10, 101)
-        y = np.sin(x)
-        self.ui.graphicsView.plot(
-            x, y, pen=pg.mkPen(color=(0, 0, 0)))
-
-    def draw_square_wave(self):
-        x = numpy.linspace(0, 20, 20)
-        y = numpy.array([5 if math.floor(2 * t) % 2 == 0 else 0 for t in x])
-        self.ui.graphicsView.plot(
-            x, y, pen=pg.mkPen(color=(0, 0, 0)))
-
     # MRI Sequence
     def plot_horizontal_lines(self):
         self.ui.graphicsView.plot(
@@ -219,6 +207,18 @@ class MainWindow(QtWidgets.QMainWindow):
             [0, 255], [30, 30], pen=pg.mkPen(color=(255, 0, 0)))
         self.ui.graphicsView.plot(
             [0, 255], [40, 40], pen=pg.mkPen(color=(255, 0, 0)))
+
+    def draw_sine_wave(self):
+        x = np.linspace(0, 10, 101)
+        y = np.sin(x)
+        self.ui.graphicsView.plot(
+            x, y, pen=pg.mkPen(color=(0, 0, 0)))
+
+    def draw_square_wave(self):
+        x = numpy.linspace(0, 20, 20)
+        y = numpy.array([5 if math.floor(2 * t) % 2 == 0 else 0 for t in x])
+        self.ui.graphicsView.plot(
+            x, y, pen=pg.mkPen(color=(0, 0, 0)))
 
 
 if __name__ == '__main__':
