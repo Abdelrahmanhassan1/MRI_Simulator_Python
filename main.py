@@ -1,3 +1,4 @@
+from collections import Counter
 from PyQt5 import QtGui, QtCore, QtWidgets
 from PyQt5.QtGui import QPixmap, QImage, QColor
 import cv2
@@ -5,7 +6,9 @@ import sys
 import numpy as np
 import pyqtgraph as pg
 from pyqtgraph import *
+import heapq
 import pyqtgraph.exporters
+import matplotlib.pyplot as plt
 from mainWindow import Ui_MainWindow
 import math
 
@@ -33,16 +36,21 @@ class MainWindow(QtWidgets.QMainWindow):
         ]
 
         # phantom
+        # self.modify_the_image_intensities_distribution()
         self.show_image_on_label()
+        # self.modify_the_image_intensities_distribution()
         self.ui.phantom_image_label.mousePressEvent = self.handle_mouse_press
+        # self.show_image_histogram()
+        # self.get_unique_image_intensities()
 
     @QtCore.pyqtSlot()
     def show_image_on_label(self):
         try:
-            self.shepp_logan_image = QImage('./images/480px-Shepp_logan.png')
+            self.shepp_logan_image = QImage(
+                './images/phantom_modified/480px-Shepp_logan.png')
             pixmap = QPixmap.fromImage(self.shepp_logan_image)
             self.ui.phantom_image_label.setPixmap(pixmap)
-            self.get_unique_image_intensities()
+            # self.get_unique_image_intensities()
         except Exception as e:
             print(e)
 
@@ -61,32 +69,83 @@ class MainWindow(QtWidgets.QMainWindow):
         except Exception as e:
             print(e)
 
-    def get_unique_image_intensities(self):
+    def modify_the_image_intensities_distribution(self):
 
-        # Convert to grayscale
-        gray_image = self.shepp_logan_image
+        img = cv2.imread('./images/480px-Shepp_logan.png', 0)
 
-        # Get the image dimensions
-        width = gray_image.width()
-        height = gray_image.height()
+        # Flatten the image array
+        pixels = img.flatten()
 
-        # Loop through each pixel and retrieve the intensity and remove duplicates
+        # Count the occurrences of each pixel intensity
+        count = Counter(pixels)
+
+        # Find the top five most frequent pixel intensities
+        most_frequent = heapq.nlargest(10, count, key=count.get)
+
+        # Print the top five most frequent pixel intensities and their counts
+        for i in most_frequent:
+            print(f"Pixel intensity {i}: {count[i]}")
+
+        # Overwrite the image array to have the nearest value of the top five most frequent pixel intensities
+        for i in range(256):
+            if i not in most_frequent:
+                nearest = min(most_frequent, key=lambda x: abs(x-i))
+                pixels[pixels == i] = nearest
+
+        # Reshape the modified array to its original shape
+        modified_img = pixels.reshape(img.shape)
+
+        # save the image locally
+        cv2.imwrite(
+            './images/phantom_modified/480px-Shepp_logan.png', modified_img)
+
+        return modified_img
+
+    def show_image_histogram(self):
+        try:
+
+            # Load the image
+            image = plt.imread('./images/480px-Shepp_logan.png')
+
+            # Compute the histogram
+            hist, bins = np.histogram(image.ravel(), bins=256, range=(0, 255))
+
+            # Find the peak value
+            peak_value = bins[np.argmax(hist)]
+            print(bins)
+            print("Peak value:", peak_value)
+            # Create a new figure
+            fig, ax = plt.subplots()
+
+            # Display the new image
+            ax.imshow(image, cmap='gray')
+
+            # Show the plot
+            plt.show()
+        except Exception as e:
+            print(e)
+
+    def get_image_intensities(self):
+        image = self.ui.phantom_image_label.pixmap().toImage()
         intensities = []
-        for y in range(height):
-            for x in range(width):
-                # Get the color of the pixel
-                color = gray_image.pixel(x, y)
-
-                # Get the intensity (assuming grayscale)
-                intensity = QColor(color).red()
-
-                # Add the intensity to the list
+        for y in range(image.height()):
+            for x in range(image.width()):
+                pixel_color = image.pixel(x, y)
+                intensity = QColor(pixel_color).getRgb()[0]
                 intensities.append(intensity)
+        return intensities
 
-        # Remove duplicates
-        self.unique_intensities = list(set(intensities))
-        self.unique_intensities.sort()
-        print("Unique intensities:", self.unique_intensities)
+    def get_unique_image_intensities(self):
+        # Get the unique intensities in the image
+        image = self.ui.phantom_image_label.pixmap().toImage()
+        intensities = set()
+        for y in range(image.height()):
+            for x in range(image.width()):
+                pixel_color = image.pixel(x, y)
+                intensity = QColor(pixel_color).getRgb()[0]
+                intensities.add(intensity)
+
+        print("Unique intensities:", intensities)
 
     def create_the_corresponding_matrices(self, height, width):
         # Create a matrix with the same shape as the loaded image
