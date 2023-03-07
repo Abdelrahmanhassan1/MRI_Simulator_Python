@@ -19,8 +19,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
+        # phantom image
         self.ui.comboBox.currentIndexChanged.connect(
             self.handle_image_features_combo_box)
+        self.show_image_on_label(
+            './images/phantom_modified/480px-Shepp_logan.png')
+        self.modify_the_image_intensities_distribution()
+        self.ui.phantom_image_label.mousePressEvent = self.handle_mouse_press
+
+        # MRI Sequence
         self.plot_horizontal_lines()
         self.redPen = pg.mkPen(color=(255, 0, 0))  # RED
         self.greenPen = pg.mkPen(color=(0, 255, 0))  # Green
@@ -35,12 +42,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.blackPen,
             self.orangePen
         ]
-
-        # phantom image
-        self.show_image_on_label(
-            './images/phantom_modified/480px-Shepp_logan.png')
-        self.modify_the_image_intensities_distribution()
-        self.ui.phantom_image_label.mousePressEvent = self.handle_mouse_press
 
     @QtCore.pyqtSlot()
     def show_image_on_label(self, image_path):
