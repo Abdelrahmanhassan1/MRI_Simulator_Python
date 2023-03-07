@@ -72,6 +72,6 @@ for phase in range(0, 360-36, 36):
             M = np.sqrt(Mxy[0]**2 + Mxy[1]**2 + Mxy[2]**2)
             sum += np.round(M, 2)
 
-k_space.append(sum)
+    k_space.append(sum)
 
 print(np.array(k_space).reshape(rows, columns))
