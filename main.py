@@ -50,6 +50,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def handle_mouse_press(self, event):
         try:
+            # if
             # Get the position of the mouse click
             x = event.pos().x()
             y = event.pos().y()
