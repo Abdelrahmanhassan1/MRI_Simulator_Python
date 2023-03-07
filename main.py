@@ -101,52 +101,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         return modified_img
 
-    def show_image_histogram(self):
-        try:
-
-            # Load the image
-            image = plt.imread('./images/480px-Shepp_logan.png')
-
-            # Compute the histogram
-            hist, bins = np.histogram(image.ravel(), bins=256, range=(0, 255))
-
-            # Find the peak value
-            peak_value = bins[np.argmax(hist)]
-            print(bins)
-            print("Peak value:", peak_value)
-            # Create a new figure
-            fig, ax = plt.subplots()
-
-            # Display the new image
-            ax.imshow(image, cmap='gray')
-
-            # Show the plot
-            plt.show()
-        except Exception as e:
-            print(e)
-
-    def get_image_intensities(self):
-        image = self.ui.phantom_image_label.pixmap().toImage()
-        intensities = []
-        for y in range(image.height()):
-            for x in range(image.width()):
-                pixel_color = image.pixel(x, y)
-                intensity = QColor(pixel_color).getRgb()[0]
-                intensities.append(intensity)
-        return intensities
-
-    def get_unique_image_intensities(self):
-        # Get the unique intensities in the image
-        image = self.ui.phantom_image_label.pixmap().toImage()
-        intensities = set()
-        for y in range(image.height()):
-            for x in range(image.width()):
-                pixel_color = image.pixel(x, y)
-                intensity = QColor(pixel_color).getRgb()[0]
-                intensities.add(intensity)
-
-        print("Unique intensities:", intensities)
-
     def create_the_corresponding_matrices(self, height, width):
         # Create a matrix with the same shape as the loaded image
         self.T1Matrix = np.zeros((height, width))
