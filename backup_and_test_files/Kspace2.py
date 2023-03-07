@@ -29,6 +29,7 @@
 
 import numpy as np
 image = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+image2 = {}
 rows, columns = image.shape
 print(rows, columns)
 # Define the vector you want to flip as a NumPy array
@@ -54,16 +55,22 @@ for phase in range(0, 360-36, 36):
                            [-np.sin(theta), np.cos(theta), 0],
                            [0, 0, 1]])
             Mxy = np.round(np.dot(R2, Mo_flipped_xy_plane), 2)
-            # applying Gx gradient with phase = 36 degrees
-            theta = phase * np.pi/180  # angle in radians
-            R3 = np.array([[np.cos(theta), np.sin(theta), 0],
-                           [-np.sin(theta), np.cos(theta), 0],
-                           [0, 0, 1]])
-            Mxy = np.round(np.dot(R3, Mxy), 2)
+            image2[str(i)+str(j)] = Mxy
 
-            # get the magnitude of the vector
-            M = np.sqrt(Mxy[0]**2 + Mxy[1]**2 + Mxy[2]**2)
-            sum += np.round(M, 2)
+    for phase2 in range(0, 360-36, 36):
+        for i in range(rows):
+            for j in range(columns):
+                # applying Gx gradient with phase = 36 degrees
+                theta = phase * np.pi/180  # angle in radians
+                R3 = np.array([[np.cos(theta), np.sin(theta), 0],
+                               [-np.sin(theta), np.cos(theta), 0],
+                               [0, 0, 1]])
+                Mxy = np.round(np.dot(R3, image2[str(i)+str(j)]), 2)
+
+                # get the magnitude of the vector
+                M = np.sqrt(Mxy[0]**2 + Mxy[1]**2 + Mxy[2]**2)
+
+    sum += np.round(M, 2)
     k_space.append(sum)
 
 print(np.array(k_space).reshape(rows, columns))
