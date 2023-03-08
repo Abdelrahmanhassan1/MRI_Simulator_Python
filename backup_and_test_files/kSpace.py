@@ -69,11 +69,15 @@ import matplotlib.pyplot as plt
 
 # print(np.array(k_space).reshape(rows, columns))
 
-image = np.array([[100, 0, 20, 30], [100, 0, 20, 30],
-                  [100, 0, 20, 30], [100, 0, 20, 30]])
+image = np.array([[100, 0], [100, 0]])
 
-print(image)
 rows, columns = image.shape
+
+new_matrix_image = np.zeros((rows, columns, 3))
+gx_counter = 0
+gy_counter = 0
+gx_phases = np.arange(0, 360, 360/rows)
+gy_phases = np.arange(0, 360, 360/rows)
 
 
 def RF_pulse():
@@ -89,16 +93,12 @@ def RF_pulse():
             Mo = [0, 0, image[i, j]]
             # Multiply the vector v by the rotation matrix R to get the flipped vector v_flipped
             Mo_flipped_xy_plane = np.round(np.dot(R, Mo), 2)
-            print(type(Mo_flipped_xy_plane))
-            # image[i, j] = Mo_flipped_xy_plane
+            new_matrix_image[i, j] = Mo_flipped_xy_plane
 
 
-def Gx_gradient(numebr_of_rows):
-    # create a range of values from 0 to 360 with a step of 360/number_of_rows with excluding the last value
-    phases = np.arange(0, 360, 360/numebr_of_rows)
-    print(phases)
-    # make a rotation matrix with 90 along x-axis
-    theta = np.pi/2  # angle in radians
+def Gx_gradient():
+    theta = gx_phases[gx_counter]
+    gx_counter += 1
     R = np.array([[1, 0, 0],
                   [0, np.cos(theta), -np.sin(theta)],
                   [0, np.sin(theta), np.cos(theta)]])
@@ -109,15 +109,12 @@ def Gx_gradient(numebr_of_rows):
             Mo = [0, 0, image[i, j]]
             # Multiply the vector v by the rotation matrix R to get the flipped vector v_flipped
             Mo_flipped_xy_plane = np.round(np.dot(R, Mo), 2)
-            # image[i, j] = Mo_flipped_xy_plane
+            new_matrix_image[i, j] = Mo_flipped_xy_plane
 
 
-def Gy_gradient(numebr_of_rows):
-    # create a range of values from 0 to 360 with a step of 360/number_of_rows with excluding the last value
-    phases = np.arange(0, 360, 360/numebr_of_rows)
-    print(phases)
-    # make a rotation matrix with 90 along x-axis
-    theta = np.pi/2  # angle in radians
+def Gy_gradient():
+    theta = gy_phases[gy_counter]
+    gy_counter += 1
     R = np.array([[1, 0, 0],
                   [0, np.cos(theta), -np.sin(theta)],
                   [0, np.sin(theta), np.cos(theta)]])
@@ -128,7 +125,8 @@ def Gy_gradient(numebr_of_rows):
             Mo = [0, 0, image[i, j]]
             # Multiply the vector v by the rotation matrix R to get the flipped vector v_flipped
             Mo_flipped_xy_plane = np.round(np.dot(R, Mo), 2)
-            # image[i, j] = Mo_flipped_xy_plane
+
+            new_matrix_image[i, j] = Mo_flipped_xy_plane
 
 
 points = []
@@ -149,5 +147,8 @@ def ReadOut_Signal():
     plt.scatter(*zip(*points))
     plt.show()
 
-# Gx_gradient(100)
-# RF_pulse()
+
+RF_pulse()
+print(new_matrix_image)
+Gx_gradient()
+print(new_matrix_image)
