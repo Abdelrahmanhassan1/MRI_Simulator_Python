@@ -97,8 +97,8 @@ def RF_pulse():
 
 
 def Gx_gradient():
-    theta = gx_phases[gx_counter]
-    gx_counter += 1
+    theta = gx_phases[0]
+
     R = np.array([[1, 0, 0],
                   [0, np.cos(theta), -np.sin(theta)],
                   [0, np.sin(theta), np.cos(theta)]])
@@ -113,8 +113,8 @@ def Gx_gradient():
 
 
 def Gy_gradient():
-    theta = gy_phases[gy_counter]
-    gy_counter += 1
+    theta = gy_phases[0]
+
     R = np.array([[1, 0, 0],
                   [0, np.cos(theta), -np.sin(theta)],
                   [0, np.sin(theta), np.cos(theta)]])
@@ -148,7 +148,16 @@ def ReadOut_Signal():
     plt.show()
 
 
+def sum_vectors_of_new_matrix():
+    sum = 0
+    for i in range(rows):
+        for j in range(columns):
+            sum += np.round(new_matrix_image[i, j], 2)
+    print(sum)
+
+
 RF_pulse()
 print(new_matrix_image)
 Gx_gradient()
 print(new_matrix_image)
+sum_vectors_of_new_matrix()
