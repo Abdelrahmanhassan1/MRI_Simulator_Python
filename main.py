@@ -74,68 +74,77 @@ class MainWindow(QtWidgets.QMainWindow):
             print(e)
 
     def modify_the_image_intensities_distribution(self):
+        try:
+            img = cv2.imread('./images/480px-Shepp_logan.png', 0)
 
-        img = cv2.imread('./images/480px-Shepp_logan.png', 0)
+            pixels = img.flatten()
 
-        pixels = img.flatten()
+            count = Counter(pixels)
 
-        count = Counter(pixels)
+            self.most_frequent = heapq.nlargest(10, count, key=count.get)
 
-        self.most_frequent = heapq.nlargest(10, count, key=count.get)
+            self.most_frequent = np.sort(self.most_frequent)
 
-        self.most_frequent = np.sort(self.most_frequent)
+            np.savetxt('./txt_files/most_frequent.txt',
+                       np.sort(self.most_frequent), fmt='%d')
+            for i in self.most_frequent:
+                print(f"Pixel intensity {i}: {count[i]}")
 
-        np.savetxt('./txt_files/most_frequent.txt',
-                   np.sort(self.most_frequent), fmt='%d')
-        for i in self.most_frequent:
-            print(f"Pixel intensity {i}: {count[i]}")
+            for i in range(256):
+                if i not in self.most_frequent:
+                    nearest = min(self.most_frequent, key=lambda x: abs(x-i))
+                    pixels[pixels == i] = nearest
 
-        for i in range(256):
-            if i not in self.most_frequent:
-                nearest = min(self.most_frequent, key=lambda x: abs(x-i))
-                pixels[pixels == i] = nearest
+            modified_img = pixels.reshape(img.shape)
 
-        modified_img = pixels.reshape(img.shape)
+            cv2.imwrite(
+                './images/phantom_modified/480px-Shepp_logan.png', modified_img)
 
-        cv2.imwrite(
-            './images/phantom_modified/480px-Shepp_logan.png', modified_img)
+            self.t1WeightedImage = np.zeros_like(modified_img)
+            self.t2WeightedImage = np.zeros_like(modified_img)
+            self.PDWeightedImage = np.zeros_like(modified_img)
 
-        self.t1WeightedImage = np.zeros_like(modified_img)
-        self.t2WeightedImage = np.zeros_like(modified_img)
-        self.PDWeightedImage = np.zeros_like(modified_img)
+            self.t1Weight = [25, 50, 75, 100, 125, 150, 175, 200, 225, 250]
+            self.t2Weight = [250, 225, 200, 175, 150, 125, 100, 75, 50, 25]
+            self. PDWeight = [255, 255, 255, 255, 255, 255, 255, 255, 255, 255]
 
-        self.t1Weight = [25, 50, 75, 100, 125, 150, 175, 200, 225, 250]
-        self.t2Weight = [250, 225, 200, 175, 150, 125, 100, 75, 50, 25]
-        self. PDWeight = [255, 255, 255, 255, 255, 255, 255, 255, 255, 255]
+            for i, intensity in enumerate(self.most_frequent):
+                self.t1WeightedImage[modified_img ==
+                                     intensity] = self.t1Weight[i]
+                self.t2WeightedImage[modified_img ==
+                                     intensity] = self.t2Weight[i]
+                self.PDWeightedImage[modified_img ==
+                                     intensity] = self.PDWeight[i]
 
-        for i, intensity in enumerate(self.most_frequent):
-            self.t1WeightedImage[modified_img == intensity] = self.t1Weight[i]
-            self.t2WeightedImage[modified_img == intensity] = self.t2Weight[i]
-            self.PDWeightedImage[modified_img == intensity] = self.PDWeight[i]
+            # Save the modified image and the three unique intensity images locally
+            cv2.imwrite('./images/features_images/t1WeightedImage.png',
+                        self.t1WeightedImage)
+            cv2.imwrite('./images/features_images/t2WeightedImage.png',
+                        self.t2WeightedImage)
+            cv2.imwrite('./images/features_images/PDWeightedImage.png',
+                        self.PDWeightedImage)
 
-        # Save the modified image and the three unique intensity images locally
-        cv2.imwrite('./images/features_images/t1WeightedImage.png',
-                    self.t1WeightedImage)
-        cv2.imwrite('./images/features_images/t2WeightedImage.png',
-                    self.t2WeightedImage)
-        cv2.imwrite('./images/features_images/PDWeightedImage.png',
-                    self.PDWeightedImage)
+        except Exception as e:
+            print(e)
 
     def handle_image_features_combo_box(self):
-        if self.ui.comboBox.currentIndex() == 0:
-            self.show_image_on_label(
-                './images/phantom_modified/480px-Shepp_logan.png')
-        elif self.ui.comboBox.currentIndex() == 1:
-            self.show_image_on_label(
-                './images/features_images/t1WeightedImage.png')
-        elif self.ui.comboBox.currentIndex() == 2:
-            self.show_image_on_label(
-                './images/features_images/t2WeightedImage.png')
-        elif self.ui.comboBox.currentIndex() == 3:
-            self.show_image_on_label(
-                './images/features_images/PDWeightedImage.png')
-
+        try:
+            if self.ui.comboBox.currentIndex() == 0:
+                self.show_image_on_label(
+                    './images/phantom_modified/480px-Shepp_logan.png')
+            elif self.ui.comboBox.currentIndex() == 1:
+                self.show_image_on_label(
+                    './images/features_images/t1WeightedImage.png')
+            elif self.ui.comboBox.currentIndex() == 2:
+                self.show_image_on_label(
+                    './images/features_images/t2WeightedImage.png')
+            elif self.ui.comboBox.currentIndex() == 3:
+                self.show_image_on_label(
+                    './images/features_images/PDWeightedImage.png')
+        except Exception as e:
+            print(e)
     # MRI Sequence
+
     def plot_horizontal_lines(self):
         self.ui.graphicsView.plot(
             [0, 255], [0, 0], pen=pg.mkPen(color=(255, 0, 0)))

@@ -27,7 +27,8 @@
 # # print(x2)
 # # print(x3)
 
-# import numpy as np
+import numpy as np
+import matplotlib.pyplot as plt
 # image = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
 # rows, columns = image.shape
 # print(rows, columns)
@@ -68,5 +69,85 @@
 
 # print(np.array(k_space).reshape(rows, columns))
 
+image = np.array([[100, 0, 20, 30], [100, 0, 20, 30],
+                  [100, 0, 20, 30], [100, 0, 20, 30]])
+
+print(image)
+rows, columns = image.shape
 
 
+def RF_pulse():
+    # make a rotation matrix with 90 along x-axis
+    theta = np.pi/2  # angle in radians
+    R = np.array([[1, 0, 0],
+                  [0, np.cos(theta), -np.sin(theta)],
+                  [0, np.sin(theta), np.cos(theta)]])
+    # loop over each pixel in the image
+    for i in range(rows):
+        for j in range(columns):
+            # define the vector Mo
+            Mo = [0, 0, image[i, j]]
+            # Multiply the vector v by the rotation matrix R to get the flipped vector v_flipped
+            Mo_flipped_xy_plane = np.round(np.dot(R, Mo), 2)
+            print(type(Mo_flipped_xy_plane))
+            # image[i, j] = Mo_flipped_xy_plane
+
+
+def Gx_gradient(numebr_of_rows):
+    # create a range of values from 0 to 360 with a step of 360/number_of_rows with excluding the last value
+    phases = np.arange(0, 360, 360/numebr_of_rows)
+    print(phases)
+    # make a rotation matrix with 90 along x-axis
+    theta = np.pi/2  # angle in radians
+    R = np.array([[1, 0, 0],
+                  [0, np.cos(theta), -np.sin(theta)],
+                  [0, np.sin(theta), np.cos(theta)]])
+    # loop over each pixel in the image
+    for i in range(rows):
+        for j in range(columns):
+            # define the vector Mo
+            Mo = [0, 0, image[i, j]]
+            # Multiply the vector v by the rotation matrix R to get the flipped vector v_flipped
+            Mo_flipped_xy_plane = np.round(np.dot(R, Mo), 2)
+            # image[i, j] = Mo_flipped_xy_plane
+
+
+def Gy_gradient(numebr_of_rows):
+    # create a range of values from 0 to 360 with a step of 360/number_of_rows with excluding the last value
+    phases = np.arange(0, 360, 360/numebr_of_rows)
+    print(phases)
+    # make a rotation matrix with 90 along x-axis
+    theta = np.pi/2  # angle in radians
+    R = np.array([[1, 0, 0],
+                  [0, np.cos(theta), -np.sin(theta)],
+                  [0, np.sin(theta), np.cos(theta)]])
+    # loop over each pixel in the image
+    for i in range(rows):
+        for j in range(columns):
+            # define the vector Mo
+            Mo = [0, 0, image[i, j]]
+            # Multiply the vector v by the rotation matrix R to get the flipped vector v_flipped
+            Mo_flipped_xy_plane = np.round(np.dot(R, Mo), 2)
+            # image[i, j] = Mo_flipped_xy_plane
+
+
+points = []
+
+
+def ReadOut_Signal():
+    points = []
+    # loop over the image and get the magnitude of the vector
+    for i in range(rows):
+        for j in range(columns):
+            # define the vector Mo
+            M_Vector = image[i, j]
+            # get the x-value and y-value as a point and store them  in a list and plot them as a points
+            point = [M_Vector[0], M_Vector[1]]
+            # store the points in a list
+            points.append(point)
+    # plot the points
+    plt.scatter(*zip(*points))
+    plt.show()
+
+# Gx_gradient(100)
+# RF_pulse()
