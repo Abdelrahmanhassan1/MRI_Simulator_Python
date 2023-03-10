@@ -40,6 +40,7 @@ k_space = image.copy()
 sum = 0
 for i, phase in zip(range(rows), range(0, 360-36, 36)):
     for j in range(columns):
+        print(f" i = {i}, phase ={phase}, j = {j}\n\n")
         Mo = [0, 0, image[i, j]]
         # flipping each pixel in the matrix by angle 90 degrees
         theta = np.pi/2  # angle in radians

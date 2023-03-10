@@ -23,28 +23,18 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.comboBox.currentIndexChanged.connect(
             self.handle_image_features_combo_box)
         self.show_image_on_label(
-            './images/phantom_modified/480px-Shepp_logan.png')
+            './images/phantom_modified/256px-Shepp_logan.png')
         self.modify_the_image_intensities_distribution()
         self.ui.phantom_image_label.mousePressEvent = self.handle_mouse_press
+        matrix = self.apply_rf_pulse_on_image()
+        matrix2 = self.apply_phase_encoding_Gy_gradient(matrix)
+        self.apply_freqency_encoding_Gx_gradient(matrix2)
 
         # MRI Sequence
-        self.plot_horizontal_lines()
-        self.redPen = pg.mkPen(color=(255, 0, 0))  # RED
-        self.greenPen = pg.mkPen(color=(0, 255, 0))  # Green
-        self.bluePen = pg.mkPen(color=(0, 0, 255))  # BLue
-        self.blackPen = pg.mkPen(color=(0, 0, 0))  # Black
-        self.orangePen = pg.mkPen(color=(255, 165, 0))  # Orange
-
-        self.pens = [
-            self.redPen,
-            self.greenPen,
-            self.bluePen,
-            self.blackPen,
-            self.orangePen
-        ]
 
     @QtCore.pyqtSlot()
     def show_image_on_label(self, image_path):
+        self.original_phantom_image = cv2.imread(image_path, 0)
         img = QImage(image_path)
         pixmap = QPixmap.fromImage(img)
         self.ui.phantom_image_label.setPixmap(pixmap)
@@ -75,7 +65,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def modify_the_image_intensities_distribution(self):
         try:
-            img = cv2.imread('./images/480px-Shepp_logan.png', 0)
+            img = cv2.imread('./images/256px-Shepp_logan.png', 0)
 
             pixels = img.flatten()
 
@@ -87,18 +77,16 @@ class MainWindow(QtWidgets.QMainWindow):
 
             np.savetxt('./txt_files/most_frequent.txt',
                        np.sort(self.most_frequent), fmt='%d')
-            for i in self.most_frequent:
-                print(f"Pixel intensity {i}: {count[i]}")
 
             for i in range(256):
                 if i not in self.most_frequent:
-                    nearest = min(self.most_frequent, key=lambda x: abs(x-i))
+                    nearest = min(self.most_frequent, key=lambda x: abs(x - i))
                     pixels[pixels == i] = nearest
 
             modified_img = pixels.reshape(img.shape)
 
             cv2.imwrite(
-                './images/phantom_modified/480px-Shepp_logan.png', modified_img)
+                './images/phantom_modified/256px-Shepp_logan.png', modified_img)
 
             self.t1WeightedImage = np.zeros_like(modified_img)
             self.t2WeightedImage = np.zeros_like(modified_img)
@@ -106,7 +94,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             self.t1Weight = [25, 50, 75, 100, 125, 150, 175, 200, 225, 250]
             self.t2Weight = [250, 225, 200, 175, 150, 125, 100, 75, 50, 25]
-            self. PDWeight = [255, 255, 255, 255, 255, 255, 255, 255, 255, 255]
+            self.PDWeight = [255, 255, 255, 255, 255, 255, 255, 255, 255, 255]
 
             for i, intensity in enumerate(self.most_frequent):
                 self.t1WeightedImage[modified_img ==
@@ -131,7 +119,7 @@ class MainWindow(QtWidgets.QMainWindow):
         try:
             if self.ui.comboBox.currentIndex() == 0:
                 self.show_image_on_label(
-                    './images/phantom_modified/480px-Shepp_logan.png')
+                    './images/phantom_modified/256px-Shepp_logan.png')
             elif self.ui.comboBox.currentIndex() == 1:
                 self.show_image_on_label(
                     './images/features_images/t1WeightedImage.png')
@@ -143,32 +131,108 @@ class MainWindow(QtWidgets.QMainWindow):
                     './images/features_images/PDWeightedImage.png')
         except Exception as e:
             print(e)
+
     # MRI Sequence
+    def apply_rf_pulse_on_image(self):
+        try:
+            # img = self.original_phantom_image.copy()
+            img = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+            rows, columns = img.shape
 
-    def plot_horizontal_lines(self):
-        self.ui.graphicsView.plot(
-            [0, 255], [0, 0], pen=pg.mkPen(color=(255, 0, 0)))
-        self.draw_square_wave()
-        self.ui.graphicsView.plot(
-            [0, 255], [10, 10], pen=pg.mkPen(color=(255, 0, 0)))
-        self.ui.graphicsView.plot(
-            [0, 255], [20, 20], pen=pg.mkPen(color=(255, 0, 0)))
-        self.ui.graphicsView.plot(
-            [0, 255], [30, 30], pen=pg.mkPen(color=(255, 0, 0)))
-        self.ui.graphicsView.plot(
-            [0, 255], [40, 40], pen=pg.mkPen(color=(255, 0, 0)))
+            # define the phase of the gradient in x and y direction
+            self.gx_phases = np.arange(0, 360, 360 / rows)
+            self.gy_phases = np.arange(0, 360, 360 / rows)
+            self.gy_counter = 0
+            self.kspace = np.zeros((rows, columns, 3))
+            new_3D_matrix_image = np.zeros((rows, columns, 3))
+            # make a rotation matrix with 90 along x-axis
+            theta = np.pi / 2  # angle in radians
+            rotation_matrix = np.array([[1, 0, 0],
+                                        [0, np.cos(theta), -np.sin(theta)],
+                                        [0, np.sin(theta), np.cos(theta)]])
+            # loop over each pixel in the image
+            for i in range(rows):
+                for j in range(columns):
+                    # define the vector Mo
+                    Mo = [0, 0, img[i, j]]
+                    # Multiply the vector v by the  rotation_matrix to get the flipped vector v_flipped
+                    Mo_flipped_xy_plane = np.round(
+                        np.dot(rotation_matrix, Mo), 2)
+                    new_3D_matrix_image[i, j] = Mo_flipped_xy_plane
 
-    def draw_sine_wave(self):
-        x = np.linspace(0, 10, 101)
-        y = np.sin(x)
-        self.ui.graphicsView.plot(
-            x, y, pen=pg.mkPen(color=(0, 0, 0)))
+            print(new_3D_matrix_image)
+            return new_3D_matrix_image
+        except Exception as e:
+            print(e)
 
-    def draw_square_wave(self):
-        x = numpy.linspace(0, 20, 20)
-        y = numpy.array([5 if math.floor(2 * t) % 2 == 0 else 0 for t in x])
-        self.ui.graphicsView.plot(
-            x, y, pen=pg.mkPen(color=(0, 0, 0)))
+    def apply_phase_encoding_Gy_gradient(self, image_3d_matrix):
+        try:
+            # angle in radians
+            theta = self.gy_phases[self.gy_counter] * np.pi / 180
+
+            # make a 3d rotation_matrix in z direction
+            rotation_matrix = np.array([[np.cos(theta), np.sin(theta), 0],
+                                        [-np.sin(theta), np.cos(theta), 0],
+                                        [0, 0, 1]])
+
+            rows, columns = image_3d_matrix.shape[:2]
+            # loop over each pixel in the image
+            for i in range(rows):
+                for j in range(columns):
+                    # define the vector Mo
+                    Mo = image_3d_matrix[i, j]
+                    # Multiply the vector v by the rotation matrix R to get the flipped vector v_flipped
+                    Mo_flipped_xy_plane = np.round(
+                        np.dot(rotation_matrix, Mo), 2)
+
+                    image_3d_matrix[i, j] = Mo_flipped_xy_plane
+
+            self.gy_counter += 1
+            print(image_3d_matrix)
+            return image_3d_matrix
+        except Exception as e:
+            print(e)
+
+    def apply_freqency_encoding_Gx_gradient(self, image_3d_matrix_after_gy):
+        try:
+            # make a copy of the image
+
+            for index, phase in enumerate(self.gx_phases):
+                image_3d_matrix_copy = image_3d_matrix_after_gy.copy()
+                # angle in radians
+                theta = phase * np.pi / 180
+                # make a 3d rotation_matrix in z direction
+                rotation_matrix = np.array([[np.cos(theta), np.sin(theta), 0],
+                                            [-np.sin(theta), np.cos(theta), 0],
+                                            [0, 0, 1]])
+
+                rows, columns = image_3d_matrix_after_gy.shape[:2]
+                # loop over each pixel in the image
+                for i in range(rows):
+                    for j in range(columns):
+                        # define the vector Mo
+                        Mo = image_3d_matrix_after_gy[i, j]
+                        # Multiply the vector v by the rotation matrix R to get the flipped vector v_flipped
+                        Mo_flipped_xy_plane = np.round(
+                            np.dot(rotation_matrix, Mo), 2)
+
+                        image_3d_matrix_copy[i, j] = Mo_flipped_xy_plane
+
+                self.kspace[self.gy_counter, index] = np.sum(
+                    image_3d_matrix_copy)
+                print(
+                    f"row: {self.gy_counter}, column: {index}, kspace: {self.kspace[self.gy_counter, index]}")
+        except Exception as e:
+            print(e)
+
+    def read_out_signal(self):
+        try:
+            for i in range(self.kspace.shape[0]):
+                for j in range(self.kspace.shape[1]):
+                    magnitude = self.kspace[i, j].real
+                    phase = self.kspace[i, j].imag
+        except Exception as e:
+            print(e)
 
 
 if __name__ == '__main__':

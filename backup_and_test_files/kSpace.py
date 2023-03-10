@@ -72,6 +72,7 @@ import matplotlib.pyplot as plt
 image = np.array([[100, 0], [100, 0]])
 
 rows, columns = image.shape
+print(f"shape= {image.shape}")
 
 new_matrix_image = np.zeros((rows, columns, 3))
 gx_counter = 0
@@ -155,9 +156,14 @@ def sum_vectors_of_new_matrix():
             sum += np.round(new_matrix_image[i, j], 2)
     print(sum)
 
+print(f"iamge = {image}\n")
+print(f"new = {new_matrix_image}\n")
+
+print(f"index 0 = {new_matrix_image[0,1]}\n\n\n\n\n")
+
 
 RF_pulse()
-print(new_matrix_image)
+print(f"{new_matrix_image}\n\n")
 Gx_gradient()
 print(new_matrix_image)
 sum_vectors_of_new_matrix()
