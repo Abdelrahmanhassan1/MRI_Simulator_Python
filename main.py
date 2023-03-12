@@ -1,17 +1,26 @@
 from collections import Counter
-from PyQt5 import QtGui, QtCore, QtWidgets
+import json
+from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtGui import QPixmap, QImage, QColor
 import cv2
 import sys
 import numpy as np
 import pyqtgraph as pg
-from pyqtgraph import *
 import heapq
-import pyqtgraph.exporters
-import matplotlib.pyplot as plt
-from mainWindow import Ui_MainWindow
-import math
+from ui_mainWindow import Ui_MainWindow
 
+def square_wave(Amp, NumOfPoints=100):
+    arr = np.full(NumOfPoints, Amp)
+    arr[0], arr[-1] = 0, 0
+    return arr
+
+print(10 + square_wave(1, 100))
+
+# def prepared_square_wave()
+
+def half_sin_wave(Amp, Freq = 1):
+    t_sin = np.arange(0, 1, 1/100)
+    return Amp * np.sin(np.pi * Freq * t_sin)
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, *args, **kwargs):
@@ -23,14 +32,89 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.comboBox.currentIndexChanged.connect(
             self.handle_image_features_combo_box)
         self.show_image_on_label(
-            './images/phantom_modified/256px-Shepp_logan.png')
+            './images/phantom_modified/480px-Shepp_logan.png')
         self.modify_the_image_intensities_distribution()
         self.ui.phantom_image_label.mousePressEvent = self.handle_mouse_press
         matrix = self.apply_rf_pulse_on_image()
         matrix2 = self.apply_phase_encoding_Gy_gradient(matrix)
         self.apply_freqency_encoding_Gx_gradient(matrix2)
 
+
+        self.redPen = pg.mkPen(color=(255, 0, 0), width=2)
+        self.greenPen = pg.mkPen(color=(0, 255, 0), width=2)
+        self.bluePen = pg.mkPen(color=(0, 0, 255), width=2)
+        self.whitePen = pg.mkPen(color=(255, 255, 255))
+
+        self.ui.signalPlot.setXRange(-0.5, 10.5, padding=0)
+        self.ui.signalPlot.setYRange(-1, 11.5, padding=0)
+
+        self.ui.signalPlot.plotItem.addLine(y=0, pen=self.whitePen)
+        self.ui.signalPlot.plotItem.addLine(y=2.5, pen=self.whitePen)
+        self.ui.signalPlot.plotItem.addLine(y=5, pen=self.whitePen)
+        self.ui.signalPlot.plotItem.addLine(y=7.5, pen=self.whitePen)
+        self.ui.signalPlot.plotItem.addLine(y=10, pen=self.whitePen)
+
+        self.ui.signalPlot.plotItem.hideAxis('left')
+
+        self.RFplotter = self.ui.signalPlot.plot([], [], pen=self.redPen)
+        self.GSSplotter = self.ui.signalPlot.plot([], [], pen=self.greenPen)
+        self.GPEplotter = self.ui.signalPlot.plot([], [], pen=self.bluePen)
+        self.GFEplotter = self.ui.signalPlot.plot([], [], pen=self.redPen)
+        self.ROplotter = self.ui.signalPlot.plot([], [], pen=self.greenPen)
+
+        self.ui.browseFileBtn.clicked.connect(self.browseFile)
+        self.ui.updateBtn.clicked.connect(self.update)
+
         # MRI Sequence
+
+    def browseFile(self):
+         # get jason file data and store it in a variable
+        self.fileName = QtWidgets.QFileDialog.getOpenFileName(
+                            self, 'Open File', './', 'Json Files (*.json)')
+
+        self.update()
+
+    def update(self):
+        # get the values from the dictionary
+        self.data = json.load(open(self.fileName[0]))
+        self.plot_Rf(*self.data['RF'])
+        self.plot_Gss(*self.data['GSS'])
+        self.plot_Gpe(*self.data['GPE'])
+        self.plot_Gfe(*self.data['GFE'])
+        self.plot_RO(*self.data['RO'])
+
+
+    def prebGraphData(self, start, amp, num = 1, function = half_sin_wave, repPerPlace = 1, elevation = 0, step = 1, oscillation = False):
+        yAxiesVal = []
+        xAxiesVal = []
+
+        for j in range(int(num)):
+            for i in np.linspace(1,-1,repPerPlace):
+                yAxiesVal.extend(elevation + (function(amp) * i * np.power(-1, j)) if oscillation else elevation + (function(amp) * i))
+                xAxiesVal.extend(np.arange(start, start + 1, 1/100))
+            start += step
+            
+        return [xAxiesVal, yAxiesVal]
+
+    def plot_Rf(self, start, amp, num = 1):
+        xAxiesVal, yAxiesVal = self.prebGraphData(start, amp, num, half_sin_wave, elevation = 10, oscillation = True)
+        self.RFplotter.setData(xAxiesVal, yAxiesVal)
+
+    def plot_Gss(self, start, amp, num=1):
+        xAxiesVal, yAxiesVal = self.prebGraphData(start, amp, num, square_wave, elevation = 7.5, step = 1)
+        self.GSSplotter.setData(xAxiesVal, yAxiesVal)
+
+    def plot_Gpe(self, start, amp, num=1):
+        xAxiesVal, yAxiesVal = self.prebGraphData(start, amp, num, square_wave, repPerPlace = 5, elevation = 5, step = 2)
+        self.GPEplotter.setData(xAxiesVal, yAxiesVal)
+
+    def plot_Gfe(self, start, amp, num=1):
+        xAxiesVal, yAxiesVal = self.prebGraphData(start, amp, num, square_wave, elevation = 2.5, step = 1)
+        self.GFEplotter.setData(xAxiesVal, yAxiesVal)
+
+    def plot_RO(self, start, amp, num=1):
+        xAxiesVal, yAxiesVal = self.prebGraphData(start, amp, num, half_sin_wave)
+        self.ROplotter.setData(xAxiesVal, yAxiesVal)
 
     @QtCore.pyqtSlot()
     def show_image_on_label(self, image_path):
@@ -65,7 +149,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def modify_the_image_intensities_distribution(self):
         try:
-            img = cv2.imread('./images/256px-Shepp_logan.png', 0)
+            img = cv2.imread('./images/480px-Shepp_logan.png', 0)
 
             pixels = img.flatten()
 
@@ -78,7 +162,7 @@ class MainWindow(QtWidgets.QMainWindow):
             np.savetxt('./txt_files/most_frequent.txt',
                        np.sort(self.most_frequent), fmt='%d')
 
-            for i in range(256):
+            for i in range(int(256)):
                 if i not in self.most_frequent:
                     nearest = min(self.most_frequent, key=lambda x: abs(x - i))
                     pixels[pixels == i] = nearest
@@ -86,7 +170,7 @@ class MainWindow(QtWidgets.QMainWindow):
             modified_img = pixels.reshape(img.shape)
 
             cv2.imwrite(
-                './images/phantom_modified/256px-Shepp_logan.png', modified_img)
+                './images/phantom_modified/480px-Shepp_logan.png', modified_img)
 
             self.t1WeightedImage = np.zeros_like(modified_img)
             self.t2WeightedImage = np.zeros_like(modified_img)
@@ -119,7 +203,7 @@ class MainWindow(QtWidgets.QMainWindow):
         try:
             if self.ui.comboBox.currentIndex() == 0:
                 self.show_image_on_label(
-                    './images/phantom_modified/256px-Shepp_logan.png')
+                    './images/phantom_modified/480px-Shepp_logan.png')
             elif self.ui.comboBox.currentIndex() == 1:
                 self.show_image_on_label(
                     './images/features_images/t1WeightedImage.png')
@@ -151,8 +235,8 @@ class MainWindow(QtWidgets.QMainWindow):
                                         [0, np.cos(theta), -np.sin(theta)],
                                         [0, np.sin(theta), np.cos(theta)]])
             # loop over each pixel in the image
-            for i in range(rows):
-                for j in range(columns):
+            for i in range(int(rows)):
+                for j in range(int(columns)):
                     # define the vector Mo
                     Mo = [0, 0, img[i, j]]
                     # Multiply the vector v by the  rotation_matrix to get the flipped vector v_flipped
@@ -177,8 +261,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
             rows, columns = image_3d_matrix.shape[:2]
             # loop over each pixel in the image
-            for i in range(rows):
-                for j in range(columns):
+            for i in range(int(rows)):
+                for j in range(int(columns)):
                     # define the vector Mo
                     Mo = image_3d_matrix[i, j]
                     # Multiply the vector v by the rotation matrix R to get the flipped vector v_flipped
@@ -208,8 +292,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 rows, columns = image_3d_matrix_after_gy.shape[:2]
                 # loop over each pixel in the image
-                for i in range(rows):
-                    for j in range(columns):
+                for i in range(int(rows)):
+                    for j in range(int(columns)):
                         # define the vector Mo
                         Mo = image_3d_matrix_after_gy[i, j]
                         # Multiply the vector v by the rotation matrix R to get the flipped vector v_flipped
@@ -227,8 +311,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def read_out_signal(self):
         try:
-            for i in range(self.kspace.shape[0]):
-                for j in range(self.kspace.shape[1]):
+            for i in range(int(self).kspace.shape[0]):
+                for j in range(int(self).kspace.shape[1]):
                     magnitude = self.kspace[i, j].real
                     phase = self.kspace[i, j].imag
         except Exception as e:
