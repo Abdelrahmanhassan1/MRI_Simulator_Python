@@ -23,24 +23,47 @@ class MainWindow(QtWidgets.QMainWindow):
         # phantom image
         self.prev_x = 0
         self.prev_y = 0
+        self.image_path = './images/shepp_logan_phantom/128px-Shepp_logan.png'
+        self.ui.comboBox_2.currentIndexChanged.connect(
+            self.change_phantom_size)
         self.ui.comboBox.currentIndexChanged.connect(
             self.handle_image_features_combo_box)
-        self.show_image_on_label(
-            './images/phantom_modified/480px-Shepp_logan.png')
-        self.modify_the_image_intensities_distribution()
+        self.modify_the_image_intensities_distribution(self.image_path)
+        self.show_image_on_label(self.image_path)
         self.ui.phantom_image_label.mousePressEvent = self.handle_mouse_press
-        matrix = self.apply_rf_pulse_on_image()
-        matrix2 = self.apply_phase_encoding_Gy_gradient(matrix)
-        self.apply_freqency_encoding_Gx_gradient(matrix2)
+        self.brightness = 100
+        self.ui.phantom_image_label.wheelEvent = self.handle_wheel_event
 
         # MRI Sequence
 
     @QtCore.pyqtSlot()
     def show_image_on_label(self, image_path):
         self.original_phantom_image = cv2.imread(image_path, 0)
+        # modify the label size to fit the image
+        self.ui.phantom_image_label.setMaximumSize(
+            self.original_phantom_image.shape[1], self.original_phantom_image.shape[0])
+        self.ui.phantom_image_label.setMinimumSize(
+            self.original_phantom_image.shape[1], self.original_phantom_image.shape[0])
+
+        self.mean, self.std_dev = cv2.meanStdDev(self.original_phantom_image)
         img = QImage(image_path)
         pixmap = QPixmap.fromImage(img)
         self.ui.phantom_image_label.setPixmap(pixmap)
+
+    def handle_wheel_event(self, event):
+        delta = event.angleDelta().y()
+        if delta > 0:
+            self.brightness += 10
+        else:
+            self.brightness -= 10
+        self.brightness = max(min(self.brightness, 255), 0)
+
+        img = cv2.addWeighted(self.original_phantom_image,
+                              255, self.original_phantom_image, 0, self.brightness)
+
+        qtImg = QImage(img, img.shape[1], img.shape[0], img.strides[0],
+                       QImage.Format_Grayscale8)
+        self.ui.phantom_image_label.setPixmap(QPixmap.fromImage(qtImg))
 
     def handle_mouse_press(self, event):
         try:
@@ -70,9 +93,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 painter.setPen(pen)
                 painter.setBrush(QBrush(QtCore.Qt.NoBrush))
                 # Use the previously saved rectangle
-                if self.prev_x != 0 and self.prev_y != 0:
-                    painter.drawRect(
-                        QRect(self.prev_x-5, self.prev_y-5, 10, 10))
 
                 # Draw a rectangle around the selected pixel
                 pen.setColor(QColor(255, 0, 0))
@@ -88,10 +108,10 @@ class MainWindow(QtWidgets.QMainWindow):
         except Exception as e:
             print(e)
 
-    def modify_the_image_intensities_distribution(self):
+    def modify_the_image_intensities_distribution(self, img_path='./images/shepp_logan_phantom/480px-Shepp_logan.png'):
         try:
             img = cv2.imread(
-                './images/shepp_logan_phantom/480px-Shepp_logan.png', 0)
+                img_path, 0)
 
             pixels = img.flatten()
 
@@ -112,7 +132,7 @@ class MainWindow(QtWidgets.QMainWindow):
             modified_img = pixels.reshape(img.shape)
 
             cv2.imwrite(
-                './images/phantom_modified/480px-Shepp_logan.png', modified_img)
+                './images/phantom_modified/'+str(img_path.split('/')[-1]), modified_img)
 
             self.t1WeightedImage = np.zeros_like(modified_img)
             self.t2WeightedImage = np.zeros_like(modified_img)
@@ -144,8 +164,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def handle_image_features_combo_box(self):
         try:
             if self.ui.comboBox.currentIndex() == 0:
-                self.show_image_on_label(
-                    './images/phantom_modified/480px-Shepp_logan.png')
+                self.show_image_on_label(self.image_path)
             elif self.ui.comboBox.currentIndex() == 1:
                 self.show_image_on_label(
                     './images/features_images/t1WeightedImage.png')
@@ -158,7 +177,25 @@ class MainWindow(QtWidgets.QMainWindow):
         except Exception as e:
             print(e)
 
+    def change_phantom_size(self):
+        try:
+            index = self.ui.comboBox_2.currentIndex()
+            if index == 0:
+                return
+            if index == 1:
+                self.image_path = './images/shepp_logan_phantom/128px-Shepp_logan.png'
+            elif index == 2:
+                self.image_path = './images/shepp_logan_phantom/240px-Shepp_logan.png'
+            elif index == 3:
+                self.image_path = './images/shepp_logan_phantom/480px-Shepp_logan.png'
+
+            self.modify_the_image_intensities_distribution(self.image_path)
+            self.show_image_on_label(self.image_path)
+        except Exception as e:
+            print(e)
+
     # MRI Sequence
+
     def apply_rf_pulse_on_image(self):
         try:
             # img = self.original_phantom_image.copy()
