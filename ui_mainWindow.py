@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'd:\My-Github\MRI_Simulator_Python\mainWindow.ui'
+# Form implementation generated from reading ui file 'd:\My-Github\NEWNEWNEW\MRI_Simulator_Python\mainWindow.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.7
 #

@@ -1,6 +1,7 @@
 from collections import Counter
-from PyQt5 import QtGui, QtCore, QtWidgets
-from PyQt5.QtGui import QPixmap, QImage, QColor
+from PyQt5 import QtCore, QtWidgets
+from PyQt5.QtGui import QPixmap, QImage, QColor, QPainter, QPen, QBrush
+from PyQt5.QtCore import Qt, QRect
 import cv2
 import sys
 import numpy as np
@@ -23,7 +24,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.comboBox.currentIndexChanged.connect(
             self.handle_image_features_combo_box)
         self.show_image_on_label(
-            './images/phantom_modified/256px-Shepp_logan.png')
+            './images/phantom_modified/480px-Shepp_logan.png')
         self.modify_the_image_intensities_distribution()
         self.ui.phantom_image_label.mousePressEvent = self.handle_mouse_press
         matrix = self.apply_rf_pulse_on_image()
@@ -45,6 +46,7 @@ class MainWindow(QtWidgets.QMainWindow):
             # Get the position of the mouse click
             x = event.pos().x()
             y = event.pos().y()
+            self.rect = QRect()
 
             # Get the color of the pixel at the clicked position
             pixmap = self.ui.phantom_image_label.pixmap()
@@ -60,12 +62,27 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.ui.label_5.setText(str(t2))
                 self.ui.label_6.setText(str(pd))
 
+                # Remove the previous rectangle, if any
+                painter = QPainter(pixmap)
+                painter.setPen(QPen(QtCore.Qt.NoPen))
+                painter.setBrush(QBrush(QtCore.Qt.transparent))
+                # Use the previously saved rectangle
+                painter.drawRect(self.rect)
+
+                # Draw a rectangle around the selected pixel
+                painter.setPen(QPen(QtCore.Qt.red, 3, QtCore.Qt.SolidLine))
+                painter.setBrush(QBrush(QtCore.Qt.NoBrush))
+                self.rect = QRect(x-5, y-5, 10, 10)  # Save the new rectangle
+                painter.drawRect(self.rect)  # Draw the new rectangle
+                self.ui.phantom_image_label.setPixmap(pixmap)
+
         except Exception as e:
             print(e)
 
     def modify_the_image_intensities_distribution(self):
         try:
-            img = cv2.imread('./images/256px-Shepp_logan.png', 0)
+            img = cv2.imread(
+                './images/shepp_logan_phantom/480px-Shepp_logan.png', 0)
 
             pixels = img.flatten()
 
@@ -86,7 +103,7 @@ class MainWindow(QtWidgets.QMainWindow):
             modified_img = pixels.reshape(img.shape)
 
             cv2.imwrite(
-                './images/phantom_modified/256px-Shepp_logan.png', modified_img)
+                './images/phantom_modified/480px-Shepp_logan.png', modified_img)
 
             self.t1WeightedImage = np.zeros_like(modified_img)
             self.t2WeightedImage = np.zeros_like(modified_img)
@@ -119,7 +136,7 @@ class MainWindow(QtWidgets.QMainWindow):
         try:
             if self.ui.comboBox.currentIndex() == 0:
                 self.show_image_on_label(
-                    './images/phantom_modified/256px-Shepp_logan.png')
+                    './images/phantom_modified/480px-Shepp_logan.png')
             elif self.ui.comboBox.currentIndex() == 1:
                 self.show_image_on_label(
                     './images/features_images/t1WeightedImage.png')
