@@ -4,13 +4,20 @@ import matplotlib.pyplot as plt
 
 plt.figure(figsize=(6.4*5, 4.8*5), constrained_layout=False)
 
-img_c1 = cv2.imread("test.png", 0)
-count = np.count_nonzero(img_c1 == 51)
-print(f"count = {count}")
+# img_c1 = cv2.imread("test.png", 0)
+img_c1 = cv2.imread('test.png',0)
+print(f"image= {img_c1}")
+# count = np.count_nonzero(img_c1 == 51)
+# print(f"count = {count}")
 img_c2 = np.fft.fft2(img_c1)
+print(f"img_c2 = {img_c2}")
 img_c3 = np.fft.fftshift(img_c2)
+print(f"img_c3 = {img_c3}")
 img_c4 = np.fft.ifftshift(img_c3)
+print(f"img_c4 = {img_c4}")
 img_c5 = np.fft.ifft2(img_c4)
+print(f"img_c5 = {img_c5}")
+
 
 plt.subplot(151), plt.imshow(img_c1, "gray"), plt.title("Original Image")
 plt.subplot(152), plt.imshow(np.log(1+np.abs(img_c2)), "gray"), plt.title("Spectrum")
