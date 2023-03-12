@@ -121,6 +121,30 @@
          </widget>
         </item>
         <item>
+         <widget class="QComboBox" name="comboBox_2">
+          <item>
+           <property name="text">
+            <string>change image size</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>16</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>32</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>64</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+        <item>
          <widget class="QLabel" name="phantom_image_label">
           <property name="minimumSize">
            <size>
