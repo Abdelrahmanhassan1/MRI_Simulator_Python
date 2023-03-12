@@ -21,8 +21,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.setupUi(self)
 
         # phantom image
-        self.prev_x = 0
-        self.prev_y = 0
         self.image_path = './images/shepp_logan_phantom/128px-Shepp_logan.png'
         self.ui.comboBox_2.currentIndexChanged.connect(
             self.change_phantom_size)
@@ -67,8 +65,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def handle_mouse_press(self, event):
         try:
-            # if
-            # Get the position of the mouse click
+
+            self.show_image_on_label(self.image_path)
             x = event.pos().x()
             y = event.pos().y()
 
@@ -88,22 +86,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 # Remove the previous rectangle, if any
                 painter = QPainter(pixmap)
-                pen = QPen()
-                pen.setColor(QColor(0, 255, 255))
-                painter.setPen(pen)
-                painter.setBrush(QBrush(QtCore.Qt.NoBrush))
-                # Use the previously saved rectangle
-
                 # Draw a rectangle around the selected pixel
-                pen.setColor(QColor(255, 0, 0))
                 painter.setPen(QPen(QtCore.Qt.red))
                 painter.setBrush(QBrush(QtCore.Qt.NoBrush))
                 self.rect = QRect(x-5, y-5, 10, 10)  # Save the new rectangle
                 painter.drawRect(self.rect)  # Draw the new rectangle
                 self.ui.phantom_image_label.setPixmap(pixmap)
-
-                self.prev_x = x
-                self.prev_y = y
 
         except Exception as e:
             print(e)
