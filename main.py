@@ -1,4 +1,5 @@
 from collections import Counter
+import json
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtGui import QPixmap, QImage, QColor, QPainter, QPen, QBrush
 from PyQt5.QtCore import Qt, QRect
@@ -31,9 +32,8 @@ class MainWindow(QtWidgets.QMainWindow):
         # phantom image
         self.prev_x = 0
         self.prev_y = 0
-        self.image_path = './images/shepp_logan_phantom/128px-Shepp_logan.png'
-        self.ui.comboBox_2.currentIndexChanged.connect(
-            self.change_phantom_size)
+        self.image_path = './images/shepp_logan_phantom/480px-Shepp_logan.png'
+        # self.ui.comboBox_2.currentIndexChanged.connect(self.change_phantom_size)
         self.ui.comboBox.currentIndexChanged.connect(
             self.handle_image_features_combo_box)
         self.modify_the_image_intensities_distribution(self.image_path)
@@ -43,6 +43,31 @@ class MainWindow(QtWidgets.QMainWindow):
         matrix2 = self.apply_phase_encoding_Gy_gradient(matrix)
         self.apply_freqency_encoding_Gx_gradient(matrix2)
 
+        self.redPen = pg.mkPen(color=(255, 0, 0), width=2)
+        self.greenPen = pg.mkPen(color=(0, 255, 0), width=2)
+        self.bluePen = pg.mkPen(color=(0, 0, 255), width=2)
+        self.whitePen = pg.mkPen(color=(255, 255, 255))
+
+        self.ui.signalPlot.setXRange(-0.5, 10.5, padding=0)
+        self.ui.signalPlot.setYRange(-1, 11.5, padding=0)
+
+        self.ui.signalPlot.plotItem.addLine(y=0, pen=self.whitePen)
+        self.ui.signalPlot.plotItem.addLine(y=2.5, pen=self.whitePen)
+        self.ui.signalPlot.plotItem.addLine(y=5, pen=self.whitePen)
+        self.ui.signalPlot.plotItem.addLine(y=7.5, pen=self.whitePen)
+        self.ui.signalPlot.plotItem.addLine(y=10, pen=self.whitePen)
+
+        self.ui.signalPlot.plotItem.hideAxis('left')
+
+        self.RFplotter = self.ui.signalPlot.plot([], [], pen=self.redPen)
+        self.GSSplotter = self.ui.signalPlot.plot([], [], pen=self.greenPen)
+        self.GPEplotter = self.ui.signalPlot.plot([], [], pen=self.bluePen)
+        self.GFEplotter = self.ui.signalPlot.plot([], [], pen=self.redPen)
+        self.ROplotter = self.ui.signalPlot.plot([], [], pen=self.greenPen)
+
+        self.ui.browseFileBtn.released.connect(self.browseFile)
+        self.ui.updateBtn.released.connect(self.update)
+        
         # MRI Sequence
 
     def browseFile(self):
@@ -125,8 +150,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def handle_mouse_press(self, event):
         try:
-            # if
-            # Get the position of the mouse click
+
+            self.show_image_on_label(self.image_path)
             x = event.pos().x()
             y = event.pos().y()
 
@@ -146,22 +171,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 # Remove the previous rectangle, if any
                 painter = QPainter(pixmap)
-                pen = QPen()
-                pen.setColor(QColor(0, 255, 255))
-                painter.setPen(pen)
-                painter.setBrush(QBrush(QtCore.Qt.NoBrush))
-                # Use the previously saved rectangle
-
                 # Draw a rectangle around the selected pixel
-                pen.setColor(QColor(255, 0, 0))
                 painter.setPen(QPen(QtCore.Qt.red))
                 painter.setBrush(QBrush(QtCore.Qt.NoBrush))
                 self.rect = QRect(x-5, y-5, 10, 10)  # Save the new rectangle
                 painter.drawRect(self.rect)  # Draw the new rectangle
                 self.ui.phantom_image_label.setPixmap(pixmap)
-
-                self.prev_x = x
-                self.prev_y = y
 
         except Exception as e:
             print(e)
@@ -182,7 +197,7 @@ class MainWindow(QtWidgets.QMainWindow):
             np.savetxt('./txt_files/most_frequent.txt',
                        np.sort(self.most_frequent), fmt='%d')
 
-            for i in range(int(256)):
+            for i in range(256):
                 if i not in self.most_frequent:
                     nearest = min(self.most_frequent, key=lambda x: abs(x - i))
                     pixels[pixels == i] = nearest
@@ -272,8 +287,8 @@ class MainWindow(QtWidgets.QMainWindow):
                                         [0, np.cos(theta), -np.sin(theta)],
                                         [0, np.sin(theta), np.cos(theta)]])
             # loop over each pixel in the image
-            for i in range(int(rows)):
-                for j in range(int(columns)):
+            for i in range(rows):
+                for j in range(columns):
                     # define the vector Mo
                     Mo = [0, 0, img[i, j]]
                     # Multiply the vector v by the  rotation_matrix to get the flipped vector v_flipped
@@ -298,8 +313,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
             rows, columns = image_3d_matrix.shape[:2]
             # loop over each pixel in the image
-            for i in range(int(rows)):
-                for j in range(int(columns)):
+            for i in range(rows):
+                for j in range(columns):
                     # define the vector Mo
                     Mo = image_3d_matrix[i, j]
                     # Multiply the vector v by the rotation matrix R to get the flipped vector v_flipped
@@ -329,8 +344,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 rows, columns = image_3d_matrix_after_gy.shape[:2]
                 # loop over each pixel in the image
-                for i in range(int(rows)):
-                    for j in range(int(columns)):
+                for i in range(rows):
+                    for j in range(columns):
                         # define the vector Mo
                         Mo = image_3d_matrix_after_gy[i, j]
                         # Multiply the vector v by the rotation matrix R to get the flipped vector v_flipped
@@ -348,8 +363,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def read_out_signal(self):
         try:
-            for i in range(int(self).kspace.shape[0]):
-                for j in range(int(self).kspace.shape[1]):
+            for i in range(self.kspace.shape[0]):
+                for j in range(self.kspace.shape[1]):
                     magnitude = self.kspace[i, j].real
                     phase = self.kspace[i, j].imag
         except Exception as e:
