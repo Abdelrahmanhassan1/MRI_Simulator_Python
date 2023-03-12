@@ -21,6 +21,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.setupUi(self)
 
         # phantom image
+        self.prev_x = 0
+        self.prev_y = 0
         self.ui.comboBox.currentIndexChanged.connect(
             self.handle_image_features_combo_box)
         self.show_image_on_label(
@@ -46,7 +48,6 @@ class MainWindow(QtWidgets.QMainWindow):
             # Get the position of the mouse click
             x = event.pos().x()
             y = event.pos().y()
-            self.rect = QRect()
 
             # Get the color of the pixel at the clicked position
             pixmap = self.ui.phantom_image_label.pixmap()
@@ -64,17 +65,25 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 # Remove the previous rectangle, if any
                 painter = QPainter(pixmap)
-                painter.setPen(QPen(QtCore.Qt.NoPen))
-                painter.setBrush(QBrush(QtCore.Qt.transparent))
+                pen = QPen()
+                pen.setColor(QColor(0, 255, 255))
+                painter.setPen(pen)
+                painter.setBrush(QBrush(QtCore.Qt.NoBrush))
                 # Use the previously saved rectangle
-                painter.drawRect(self.rect)
+                if self.prev_x != 0 and self.prev_y != 0:
+                    painter.drawRect(
+                        QRect(self.prev_x-5, self.prev_y-5, 10, 10))
 
                 # Draw a rectangle around the selected pixel
-                painter.setPen(QPen(QtCore.Qt.red, 3, QtCore.Qt.SolidLine))
+                pen.setColor(QColor(255, 0, 0))
+                painter.setPen(QPen(QtCore.Qt.red))
                 painter.setBrush(QBrush(QtCore.Qt.NoBrush))
                 self.rect = QRect(x-5, y-5, 10, 10)  # Save the new rectangle
                 painter.drawRect(self.rect)  # Draw the new rectangle
                 self.ui.phantom_image_label.setPixmap(pixmap)
+
+                self.prev_x = x
+                self.prev_y = y
 
         except Exception as e:
             print(e)
