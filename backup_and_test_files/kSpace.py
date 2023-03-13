@@ -70,18 +70,18 @@ def apply_sequence(image_after_rf_pulse):
                     phase_from_gy = (gy_phase / (rows-1)) * i
                     phase_from_gx = (gx_phase / (columns-1)) * j
                     applied_phase = (phase_from_gx + phase_from_gy)
-                    applied_phase *= np.pi/180
                     phases[i, j] = applied_phase
+                    applied_phase *= np.pi/180
                     # print(f"applied_phase", applied_phase)
                     new_x_value = pixel_value * np.cos(applied_phase)
                     new_y_value = pixel_value * np.sin(applied_phase)
                     image_after_rf_pulse[i, j, 0] = new_x_value
                     image_after_rf_pulse[i, j, 1] = new_y_value
-            # print(f"phases", phases)
+            print(f"phases \n", phases)
             # print(f"image_after_rf_pulse", image_after_rf_pulse)
             # sum the image vectors
             sum = np.round(np.sum(image_after_rf_pulse, axis=(0, 1)), 2)
-            print(f"sum", sum)
+            # print(f"sum", sum)
             # print(sum)
 
             # get the magnitude of the vector
@@ -89,7 +89,9 @@ def apply_sequence(image_after_rf_pulse):
             # print(M)
             # k_space[row_index, column_index] = M
             k_space_2d[row_index][column_index] = sum[0] + 1j * sum[1]
-    # # print(f"k_space 2d", k_space_2d)
+
+    print("=============================================")
+    print(f"k_space 2d \n", k_space_2d)
     # plt.rcParams["figure.figsize"] = [7.00, 3.50]
 
     # plt.rcParams["figure.autolayout"] = True
