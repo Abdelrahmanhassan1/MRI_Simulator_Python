@@ -1,4 +1,5 @@
 from collections import Counter
+import json
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtGui import QPixmap, QImage, QColor, QPainter, QPen, QBrush
 from PyQt5.QtCore import Qt, QRect
@@ -6,13 +7,21 @@ import cv2
 import sys
 import numpy as np
 import pyqtgraph as pg
-from pyqtgraph import *
 import heapq
-import pyqtgraph.exporters
-import matplotlib.pyplot as plt
-from mainWindow import Ui_MainWindow
-import math
+from ui_mainWindow import Ui_MainWindow
 
+def square_wave(Amp, NumOfPoints=100):
+    arr = np.full(NumOfPoints, Amp)
+    arr[0], arr[-1] = 0, 0
+    return arr
+
+print(10 + square_wave(1, 100))
+
+# def prepared_square_wave()
+
+def half_sin_wave(Amp, Freq = 1):
+    t_sin = np.arange(0, 1, 1/100)
+    return Amp * np.sin(np.pi * Freq * t_sin)
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, *args, **kwargs):
@@ -21,18 +30,94 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.setupUi(self)
 
         # phantom image
-        self.image_path = './images/shepp_logan_phantom/128px-Shepp_logan.png'
-        self.ui.comboBox_2.currentIndexChanged.connect(
-            self.change_phantom_size)
+        self.prev_x = 0
+        self.prev_y = 0
+        self.image_path = './images/shepp_logan_phantom/480px-Shepp_logan.png'
+        # self.ui.comboBox_2.currentIndexChanged.connect(self.change_phantom_size)
         self.ui.comboBox.currentIndexChanged.connect(
             self.handle_image_features_combo_box)
         self.modify_the_image_intensities_distribution(self.image_path)
         self.show_image_on_label(self.image_path)
         self.ui.phantom_image_label.mousePressEvent = self.handle_mouse_press
-        self.brightness = 100
-        self.ui.phantom_image_label.wheelEvent = self.handle_wheel_event
+        matrix = self.apply_rf_pulse_on_image()
+        matrix2 = self.apply_phase_encoding_Gy_gradient(matrix)
+        self.apply_freqency_encoding_Gx_gradient(matrix2)
 
+        self.redPen = pg.mkPen(color=(255, 0, 0), width=2)
+        self.greenPen = pg.mkPen(color=(0, 255, 0), width=2)
+        self.bluePen = pg.mkPen(color=(0, 0, 255), width=2)
+        self.whitePen = pg.mkPen(color=(255, 255, 255))
+
+        self.ui.signalPlot.setXRange(-0.5, 10.5, padding=0)
+        self.ui.signalPlot.setYRange(-1, 11.5, padding=0)
+
+        self.ui.signalPlot.plotItem.addLine(y=0, pen=self.whitePen)
+        self.ui.signalPlot.plotItem.addLine(y=2.5, pen=self.whitePen)
+        self.ui.signalPlot.plotItem.addLine(y=5, pen=self.whitePen)
+        self.ui.signalPlot.plotItem.addLine(y=7.5, pen=self.whitePen)
+        self.ui.signalPlot.plotItem.addLine(y=10, pen=self.whitePen)
+
+        self.ui.signalPlot.plotItem.hideAxis('left')
+
+        self.RFplotter = self.ui.signalPlot.plot([], [], pen=self.redPen)
+        self.GSSplotter = self.ui.signalPlot.plot([], [], pen=self.greenPen)
+        self.GPEplotter = self.ui.signalPlot.plot([], [], pen=self.bluePen)
+        self.GFEplotter = self.ui.signalPlot.plot([], [], pen=self.redPen)
+        self.ROplotter = self.ui.signalPlot.plot([], [], pen=self.greenPen)
+
+        self.ui.browseFileBtn.released.connect(self.browseFile)
+        self.ui.updateBtn.released.connect(self.update)
+        
         # MRI Sequence
+
+    def browseFile(self):
+         # get jason file data and store it in a variable
+        self.fileName = QtWidgets.QFileDialog.getOpenFileName(
+                            self, 'Open File', './', 'Json Files (*.json)')
+
+        self.update()
+
+    def update(self):
+        # get the values from the dictionary
+        self.data = json.load(open(self.fileName[0]))
+        self.plot_Rf(*self.data['RF'])
+        self.plot_Gss(*self.data['GSS'])
+        self.plot_Gpe(*self.data['GPE'])
+        self.plot_Gfe(*self.data['GFE'])
+        self.plot_RO(*self.data['RO'])
+
+
+    def prebGraphData(self, start, amp, num = 1, function = half_sin_wave, repPerPlace = 1, elevation = 0, step = 1, oscillation = False):
+        yAxiesVal = []
+        xAxiesVal = []
+
+        for j in range(int(num)):
+            for i in np.linspace(1,-1,repPerPlace):
+                yAxiesVal.extend(elevation + (function(amp) * i * np.power(-1, j)) if oscillation else elevation + (function(amp) * i))
+                xAxiesVal.extend(np.arange(start, start + 1, 1/100))
+            start += step
+            
+        return [xAxiesVal, yAxiesVal]
+
+    def plot_Rf(self, start, amp, num = 1):
+        xAxiesVal, yAxiesVal = self.prebGraphData(start, amp, num, half_sin_wave, elevation = 10, oscillation = True)
+        self.RFplotter.setData(xAxiesVal, yAxiesVal)
+
+    def plot_Gss(self, start, amp, num=1):
+        xAxiesVal, yAxiesVal = self.prebGraphData(start, amp, num, square_wave, elevation = 7.5, step = 1)
+        self.GSSplotter.setData(xAxiesVal, yAxiesVal)
+
+    def plot_Gpe(self, start, amp, num=1):
+        xAxiesVal, yAxiesVal = self.prebGraphData(start, amp, num, square_wave, repPerPlace = 5, elevation = 5, step = 2)
+        self.GPEplotter.setData(xAxiesVal, yAxiesVal)
+
+    def plot_Gfe(self, start, amp, num=1):
+        xAxiesVal, yAxiesVal = self.prebGraphData(start, amp, num, square_wave, elevation = 2.5, step = 1)
+        self.GFEplotter.setData(xAxiesVal, yAxiesVal)
+
+    def plot_RO(self, start, amp, num=1):
+        xAxiesVal, yAxiesVal = self.prebGraphData(start, amp, num, half_sin_wave)
+        self.ROplotter.setData(xAxiesVal, yAxiesVal)
 
     @QtCore.pyqtSlot()
     def show_image_on_label(self, image_path):

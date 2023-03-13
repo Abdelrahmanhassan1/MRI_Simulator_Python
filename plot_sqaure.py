@@ -62,8 +62,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.signalPlot.plotItem.addLine(y=7.5, pen=self.whitePen)
         self.ui.signalPlot.plotItem.addLine(y=10, pen=self.whitePen)
 
-        self.ui.signalPlot.plotItem.setLabel('left', "Amplitude", units='V')
-        self.ui.signalPlot.plotItem.setLabel('bottom', "Time", units='s')
+        # self.ui.signalPlot.plotItem.setLabel('left', "Amplitude", units='V')
+        # self.ui.signalPlot.plotItem.setLabel('bottom', "Time", units='s')
+
+        self.ui.signalPlot.plotItem.hideAxis('left')
 
         self.RFplotter = self.ui.signalPlot.plot([], [], pen=self.redPen)
         self.GSSplotter = self.ui.signalPlot.plot([], [], pen=self.greenPen)
