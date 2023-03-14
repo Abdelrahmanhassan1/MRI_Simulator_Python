@@ -12,13 +12,11 @@ import heapq
 from ui_mainWindow import Ui_MainWindow
 
 
+
 def square_wave(Amp, NumOfPoints=100):
     arr = np.full(NumOfPoints, Amp)
     arr[0], arr[-1] = 0, 0
     return arr
-
-
-# def prepared_square_wave()
 
 
 def half_sin_wave(Amp, Freq=1):
@@ -36,15 +34,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.prev_x = 0
         self.prev_y = 0
         self.image_path = './images/shepp_logan_phantom/480px-Shepp_logan.png'
-        # self.ui.comboBox_2.currentIndexChanged.connect(self.change_phantom_size)
+        self.ui.comboBox_2.currentIndexChanged.connect(
+            self.change_phantom_size)
         self.ui.comboBox.currentIndexChanged.connect(
             self.handle_image_features_combo_box)
         self.modify_the_image_intensities_distribution(self.image_path)
         self.show_image_on_label(self.image_path)
         self.ui.phantom_image_label.mousePressEvent = self.handle_mouse_press
-        matrix = self.apply_rf_pulse_on_image()
-        matrix2 = self.apply_phase_encoding_Gy_gradient(matrix)
-        self.apply_freqency_encoding_Gx_gradient(matrix2)
+        self.brightness = 100
+        self.ui.phantom_image_label.wheelEvent = self.handle_wheel_event
 
         self.redPen = pg.mkPen(color=(255, 0, 0), width=2)
         self.greenPen = pg.mkPen(color=(0, 255, 0), width=2)
@@ -137,70 +135,102 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @QtCore.pyqtSlot()
     def show_image_on_label(self, image_path):
-        self.original_phantom_image = cv2.imread(image_path, 0)
-        # modify the label size to fit the image
-        self.ui.phantom_image_label.setMaximumSize(
-            self.original_phantom_image.shape[1], self.original_phantom_image.shape[0])
-        self.ui.phantom_image_label.setMinimumSize(
-            self.original_phantom_image.shape[1], self.original_phantom_image.shape[0])
+        try:
+            self.original_phantom_image = cv2.imread(image_path, 0)
+            # modify the label size to fit the image
+            self.ui.phantom_image_label.setMaximumSize(
+                self.original_phantom_image.shape[1], self.original_phantom_image.shape[0])
+            self.ui.phantom_image_label.setMinimumSize(
+                self.original_phantom_image.shape[1], self.original_phantom_image.shape[0])
 
-        self.mean, self.std_dev = cv2.meanStdDev(self.original_phantom_image)
-        img = QImage(image_path)
-        pixmap = QPixmap.fromImage(img)
-        self.ui.phantom_image_label.setPixmap(pixmap)
+            self.mean, self.std_dev = cv2.meanStdDev(
+                self.original_phantom_image)
+            img = QImage(image_path)
+            pixmap = QPixmap.fromImage(img)
+            self.ui.phantom_image_label.setPixmap(pixmap)
+        except Exception as e:
+            print(e)
 
     def handle_wheel_event(self, event):
-        delta = event.angleDelta().y()
-        if delta > 0:
-            self.brightness += 10
-        else:
-            self.brightness -= 10
-        self.brightness = max(min(self.brightness, 255), 0)
+        try:
+            delta = event.angleDelta().y()
+            if delta > 0:
+                self.brightness += 10
+            else:
+                self.brightness -= 10
 
-        img = cv2.addWeighted(self.original_phantom_image,
-                              255, self.original_phantom_image, 0, self.brightness)
+            # Set threshold for all white image
+            if self.brightness > 245:
+                self.brightness = 255
+            elif self.brightness < -245:
+                self.brightness = -255
 
-        qtImg = QImage(img, img.shape[1], img.shape[0], img.strides[0],
-                       QImage.Format_Grayscale8)
-        self.ui.phantom_image_label.setPixmap(QPixmap.fromImage(qtImg))
+            img = self.original_phantom_image + self.brightness
+            np.savetxt('IMAGE.txt',
+                       img, fmt='%d')
+
+            img_min = img.min()
+            img_max = img.max()
+            img = (img - img_min) * 255.0 / (img_max - img_min)
+
+            # Ensure that the values of img are between 0 and 255
+            img = np.clip(img, 0, 255)
+
+            # Convert the data type of img to uint8 (unsigned 8-bit integer)
+            img = img.astype(np.uint8)
+
+            # # Invert the colors if necessary
+            if img_max > 255:
+                img = 255 - img
+
+            # self.modify_the_image_intensities_distribution(self.image_path, img)
+
+            qtImg = QImage(img, img.shape[1], img.shape[0], img.strides[0],
+                           QImage.Format_Grayscale8)
+            self.ui.phantom_image_label.setPixmap(QPixmap.fromImage(qtImg))
+        except Exception as e:
+            print(e)
 
     def handle_mouse_press(self, event):
         try:
+            if self.ui.comboBox.currentText() == 'Image':
+                self.show_image_on_label(self.image_path)
+                x = event.pos().x()
+                y = event.pos().y()
+                # Get the color of the pixel at the clicked position
+                pixmap = self.ui.phantom_image_label.pixmap()
+                if pixmap is not None:
+                    pixel_color = pixmap.toImage().pixel(x, y)
+                    intensity = QColor(pixel_color).getRgb()[0]
+                    index = np.where(
+                        self.most_frequent == intensity)[0][0]
+                    t1 = self.t1Weight[index]
+                    t2 = self.t2Weight[index]
+                    pd = self.PDWeight[index]
+                    self.ui.label_4.setText(str(t1))
+                    self.ui.label_5.setText(str(t2))
+                    self.ui.label_6.setText(str(pd))
 
-            self.show_image_on_label(self.image_path)
-            x = event.pos().x()
-            y = event.pos().y()
-
-            # Get the color of the pixel at the clicked position
-            pixmap = self.ui.phantom_image_label.pixmap()
-            if pixmap is not None:
-                pixel_color = pixmap.toImage().pixel(x, y)
-                intensity = QColor(pixel_color).getRgb()[0]
-                index = np.where(
-                    self.most_frequent == intensity)[0][0]
-                t1 = self.t1Weight[index]
-                t2 = self.t2Weight[index]
-                pd = self.PDWeight[index]
-                self.ui.label_4.setText(str(t1))
-                self.ui.label_5.setText(str(t2))
-                self.ui.label_6.setText(str(pd))
-
-                # Remove the previous rectangle, if any
-                painter = QPainter(pixmap)
-                # Draw a rectangle around the selected pixel
-                painter.setPen(QPen(QtCore.Qt.red))
-                painter.setBrush(QBrush(QtCore.Qt.NoBrush))
-                self.rect = QRect(x-5, y-5, 10, 10)  # Save the new rectangle
-                painter.drawRect(self.rect)  # Draw the new rectangle
-                self.ui.phantom_image_label.setPixmap(pixmap)
+                    # Remove the previous rectangle, if any
+                    painter = QPainter(pixmap)
+                    # Draw a rectangle around the selected pixel
+                    painter.setPen(QPen(QtCore.Qt.red))
+                    painter.setBrush(QBrush(QtCore.Qt.NoBrush))
+                    # Save the new rectangle
+                    self.rect = QRect(x-5, y-5, 10, 10)
+                    painter.drawRect(self.rect)  # Draw the new rectangle
+                    self.ui.phantom_image_label.setPixmap(pixmap)
 
         except Exception as e:
             print(e)
 
-    def modify_the_image_intensities_distribution(self, img_path='./images/shepp_logan_phantom/480px-Shepp_logan.png'):
+    def modify_the_image_intensities_distribution(self, img_path='./images/shepp_logan_phantom/480px-Shepp_logan.png', image=None):
         try:
-            img = cv2.imread(
-                img_path, 0)
+            if image is not None:
+                img = image
+            else:
+                img = cv2.imread(
+                    img_path, 0)
 
             pixels = img.flatten()
 
@@ -272,11 +302,16 @@ class MainWindow(QtWidgets.QMainWindow):
             if index == 0:
                 return
             if index == 1:
-                self.image_path = './images/shepp_logan_phantom/128px-Shepp_logan.png'
+                self.phantom_image_resized = cv2.resize(
+                    self.original_phantom_image, (16, 16))
+
             elif index == 2:
-                self.image_path = './images/shepp_logan_phantom/240px-Shepp_logan.png'
+                self.phantom_image_resized = cv2.resize(
+                    self.original_phantom_image, (32, 32))
+
             elif index == 3:
-                self.image_path = './images/shepp_logan_phantom/480px-Shepp_logan.png'
+                self.phantom_image_resized = cv2.resize(
+                    self.original_phantom_image, (64, 64))
 
             self.modify_the_image_intensities_distribution(self.image_path)
             self.show_image_on_label(self.image_path)
@@ -393,6 +428,84 @@ class MainWindow(QtWidgets.QMainWindow):
                 for j in range(self.kspace.shape[1]):
                     magnitude = self.kspace[i, j].real
                     phase = self.kspace[i, j].imag
+        except Exception as e:
+            print(e)
+
+    def browseFile(self):
+        try:
+            # get jason file data and store it in a variable
+            self.fileName = QtWidgets.QFileDialog.getOpenFileName(
+                self, 'Open File', './', 'Json Files (*.json)')
+
+            self.update()
+        except Exception as e:
+            print(e)
+
+    def update(self):
+        try:
+            # get the values from the dictionary
+            self.data = json.load(open(self.fileName[0]))
+            self.plot_Rf(*self.data['RF'])
+            self.plot_Gss(*self.data['GSS'])
+            self.plot_Gpe(*self.data['GPE'])
+            self.plot_Gfe(*self.data['GFE'])
+            self.plot_RO(*self.data['RO'])
+        except Exception as e:
+            print(e)
+
+    def prebGraphData(self, start, amp, num=1, function=half_sin_wave, repPerPlace=1, elevation=0, step=1, oscillation=False):
+        try:
+            yAxiesVal = []
+            xAxiesVal = []
+
+            for j in range(int(num)):
+                for i in np.linspace(1, -1, repPerPlace):
+                    yAxiesVal.extend(elevation + (function(amp) * i * np.power(-1, j))
+                                     if oscillation else elevation + (function(amp) * i))
+                    xAxiesVal.extend(np.arange(start, start + 1, 1/100))
+                start += step
+
+            return [xAxiesVal, yAxiesVal]
+        except Exception as e:
+            print(e)
+
+    def plot_Rf(self, start, amp, num=1):
+        try:
+            xAxiesVal, yAxiesVal = self.prebGraphData(
+                start, amp, num, half_sin_wave, elevation=10, oscillation=True)
+            self.RFplotter.setData(xAxiesVal, yAxiesVal)
+        except Exception as e:
+            print(e)
+
+    def plot_Gss(self, start, amp, num=1):
+        try:
+            xAxiesVal, yAxiesVal = self.prebGraphData(
+                start, amp, num, square_wave, elevation=7.5, step=1)
+            self.GSSplotter.setData(xAxiesVal, yAxiesVal)
+        except Exception as e:
+            print(e)
+
+    def plot_Gpe(self, start, amp, num=1):
+        try:
+            xAxiesVal, yAxiesVal = self.prebGraphData(
+                start, amp, num, square_wave, repPerPlace=5, elevation=5, step=2)
+            self.GPEplotter.setData(xAxiesVal, yAxiesVal)
+        except Exception as e:
+            print(e)
+
+    def plot_Gfe(self, start, amp, num=1):
+        try:
+            xAxiesVal, yAxiesVal = self.prebGraphData(
+                start, amp, num, square_wave, elevation=2.5, step=1)
+            self.GFEplotter.setData(xAxiesVal, yAxiesVal)
+        except Exception as e:
+            print(e)
+
+    def plot_RO(self, start, amp, num=1):
+        try:
+            xAxiesVal, yAxiesVal = self.prebGraphData(
+                start, amp, num, half_sin_wave)
+            self.ROplotter.setData(xAxiesVal, yAxiesVal)
         except Exception as e:
             print(e)
 
