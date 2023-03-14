@@ -1,5 +1,6 @@
 from collections import Counter
 import json
+import math
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtGui import QPixmap, QImage, QColor, QPainter, QPen, QBrush
 from PyQt5.QtCore import Qt, QRect
@@ -10,18 +11,20 @@ import pyqtgraph as pg
 import heapq
 from ui_mainWindow import Ui_MainWindow
 
+
 def square_wave(Amp, NumOfPoints=100):
     arr = np.full(NumOfPoints, Amp)
     arr[0], arr[-1] = 0, 0
     return arr
 
-print(10 + square_wave(1, 100))
 
 # def prepared_square_wave()
 
-def half_sin_wave(Amp, Freq = 1):
+
+def half_sin_wave(Amp, Freq=1):
     t_sin = np.arange(0, 1, 1/100)
     return Amp * np.sin(np.pi * Freq * t_sin)
+
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, *args, **kwargs):
@@ -67,13 +70,21 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.ui.browseFileBtn.released.connect(self.browseFile)
         self.ui.updateBtn.released.connect(self.update)
-        
+
         # MRI Sequence
 
+        # run the function to read the starting values from the dials
+        self.read_dial_values_and_calculate_ernst()
+        # connect the dials to the function
+        self.ui.dial.valueChanged.connect(
+            self.read_dial_values_and_calculate_ernst)
+        self.ui.dial_2.valueChanged.connect(
+            self.read_dial_values_and_calculate_ernst)
+
     def browseFile(self):
-         # get jason file data and store it in a variable
+        # get jason file data and store it in a variable
         self.fileName = QtWidgets.QFileDialog.getOpenFileName(
-                            self, 'Open File', './', 'Json Files (*.json)')
+            self, 'Open File', './', 'Json Files (*.json)')
 
         self.update()
 
@@ -86,37 +97,42 @@ class MainWindow(QtWidgets.QMainWindow):
         self.plot_Gfe(*self.data['GFE'])
         self.plot_RO(*self.data['RO'])
 
-
-    def prebGraphData(self, start, amp, num = 1, function = half_sin_wave, repPerPlace = 1, elevation = 0, step = 1, oscillation = False):
+    def prebGraphData(self, start, amp, num=1, function=half_sin_wave, repPerPlace=1, elevation=0, step=1, oscillation=False):
         yAxiesVal = []
         xAxiesVal = []
 
         for j in range(int(num)):
-            for i in np.linspace(1,-1,repPerPlace):
-                yAxiesVal.extend(elevation + (function(amp) * i * np.power(-1, j)) if oscillation else elevation + (function(amp) * i))
+            for i in np.linspace(1, -1, repPerPlace):
+                yAxiesVal.extend(elevation + (function(amp) * i * np.power(-1, j))
+                                 if oscillation else elevation + (function(amp) * i))
                 xAxiesVal.extend(np.arange(start, start + 1, 1/100))
             start += step
-            
+
         return [xAxiesVal, yAxiesVal]
 
-    def plot_Rf(self, start, amp, num = 1):
-        xAxiesVal, yAxiesVal = self.prebGraphData(start, amp, num, half_sin_wave, elevation = 10, oscillation = True)
+    def plot_Rf(self, start, amp, num=1):
+        xAxiesVal, yAxiesVal = self.prebGraphData(
+            start, amp, num, half_sin_wave, elevation=10, oscillation=True)
         self.RFplotter.setData(xAxiesVal, yAxiesVal)
 
     def plot_Gss(self, start, amp, num=1):
-        xAxiesVal, yAxiesVal = self.prebGraphData(start, amp, num, square_wave, elevation = 7.5, step = 1)
+        xAxiesVal, yAxiesVal = self.prebGraphData(
+            start, amp, num, square_wave, elevation=7.5, step=1)
         self.GSSplotter.setData(xAxiesVal, yAxiesVal)
 
     def plot_Gpe(self, start, amp, num=1):
-        xAxiesVal, yAxiesVal = self.prebGraphData(start, amp, num, square_wave, repPerPlace = 5, elevation = 5, step = 2)
+        xAxiesVal, yAxiesVal = self.prebGraphData(
+            start, amp, num, square_wave, repPerPlace=5, elevation=5, step=2)
         self.GPEplotter.setData(xAxiesVal, yAxiesVal)
 
     def plot_Gfe(self, start, amp, num=1):
-        xAxiesVal, yAxiesVal = self.prebGraphData(start, amp, num, square_wave, elevation = 2.5, step = 1)
+        xAxiesVal, yAxiesVal = self.prebGraphData(
+            start, amp, num, square_wave, elevation=2.5, step=1)
         self.GFEplotter.setData(xAxiesVal, yAxiesVal)
 
     def plot_RO(self, start, amp, num=1):
-        xAxiesVal, yAxiesVal = self.prebGraphData(start, amp, num, half_sin_wave)
+        xAxiesVal, yAxiesVal = self.prebGraphData(
+            start, amp, num, half_sin_wave)
         self.ROplotter.setData(xAxiesVal, yAxiesVal)
 
     @QtCore.pyqtSlot()
@@ -269,6 +285,18 @@ class MainWindow(QtWidgets.QMainWindow):
 
     # MRI Sequence
 
+    def read_dial_values_and_calculate_ernst(self):
+        try:
+            tr_value = int(self.ui.dial.value())
+            t1_value = int(self.ui.dial_2.value())
+            ernst_angle = int(np.arccos(
+                math.exp(-tr_value/t1_value)) * (180.0 / math.pi))
+            self.ui.label_8.setText(str(self.ui.dial.value()))
+            self.ui.label_9.setText(str(self.ui.dial_2.value()))
+            self.ui.label_13.setText(str(ernst_angle))
+        except Exception as e:
+            print(e)
+
     def apply_rf_pulse_on_image(self):
         try:
             # img = self.original_phantom_image.copy()
@@ -296,7 +324,6 @@ class MainWindow(QtWidgets.QMainWindow):
                         np.dot(rotation_matrix, Mo), 2)
                     new_3D_matrix_image[i, j] = Mo_flipped_xy_plane
 
-            print(new_3D_matrix_image)
             return new_3D_matrix_image
         except Exception as e:
             print(e)
@@ -324,7 +351,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     image_3d_matrix[i, j] = Mo_flipped_xy_plane
 
             self.gy_counter += 1
-            print(image_3d_matrix)
+
             return image_3d_matrix
         except Exception as e:
             print(e)
@@ -356,8 +383,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 self.kspace[self.gy_counter, index] = np.sum(
                     image_3d_matrix_copy)
-                print(
-                    f"row: {self.gy_counter}, column: {index}, kspace: {self.kspace[self.gy_counter, index]}")
+
         except Exception as e:
             print(e)
 
