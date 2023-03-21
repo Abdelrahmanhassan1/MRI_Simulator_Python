@@ -34,7 +34,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.prev_y = 0
         self.phantom_image_resized = cv2.imread(
             "./images/phantom_modified/16x16.png", 0)
-        self.image_path = './images/shepp_logan_phantom/64x64.png'
+
+        self.image_path = './images/shepp_logan_phantom/300px-Shepp_logan.png'
         self.ui.comboBox_2.currentIndexChanged.connect(
             self.change_phantom_size)
         self.ui.comboBox.currentIndexChanged.connect(
@@ -45,6 +46,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.brightness = 100
         self.ui.phantom_image_label.wheelEvent = self.handle_wheel_event
 
+        # MRI Sequence
         self.redPen = pg.mkPen(color=(255, 0, 0), width=2)
         self.greenPen = pg.mkPen(color=(0, 255, 0), width=2)
         self.bluePen = pg.mkPen(color=(0, 0, 255), width=2)
@@ -68,77 +70,18 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ROplotter = self.ui.signalPlot.plot([], [], pen=self.greenPen)
 
         self.ui.browseFileBtn.released.connect(self.browseFile)
-        self.ui.pushButton.clicked.connect(
-            lambda: self.apply_rf_pulse(self.phantom_image_resized, 90))
-        self.ui.pushButton_2.clicked.connect(
-            lambda: self.apply_gradient(self.new_3D_matrix_image))
-
-        # self.ui.pushButton.clicked.connect(self.update_image)
         self.ui.updateBtn.released.connect(self.update)
 
-        # MRI Sequence
-
-        # run the function to read the starting values from the dials
+        # RF and Gradient
+        self.ui.pushButton.released.connect(
+            lambda: self.apply_rf_pulse(self.phantom_image_resized, 90))
+        self.ui.pushButton_2.released.connect(
+            lambda: self.apply_gradient(self.new_3D_matrix_image))
         self.read_dial_values_and_calculate_ernst()
-        # connect the dials to the function
         self.ui.dial.valueChanged.connect(
             self.read_dial_values_and_calculate_ernst)
         self.ui.dial_2.valueChanged.connect(
             self.read_dial_values_and_calculate_ernst)
-
-    def browseFile(self):
-        # get jason file data and store it in a variable
-        self.fileName = QtWidgets.QFileDialog.getOpenFileName(
-            self, 'Open File', './', 'Json Files (*.json)')
-
-        self.update()
-
-    def update(self):
-        # get the values from the dictionary
-        self.data = json.load(open(self.fileName[0]))
-        self.plot_Rf(*self.data['RF'])
-        self.plot_Gss(*self.data['GSS'])
-        self.plot_Gpe(*self.data['GPE'])
-        self.plot_Gfe(*self.data['GFE'])
-        self.plot_RO(*self.data['RO'])
-
-    def prebGraphData(self, start, amp, num=1, function=half_sin_wave, repPerPlace=1, elevation=0, step=1, oscillation=False):
-        yAxiesVal = []
-        xAxiesVal = []
-
-        for j in range(int(num)):
-            for i in np.linspace(1, -1, repPerPlace):
-                yAxiesVal.extend(elevation + (function(amp) * i * np.power(-1, j))
-                                 if oscillation else elevation + (function(amp) * i))
-                xAxiesVal.extend(np.arange(start, start + 1, 1/100))
-            start += step
-
-        return [xAxiesVal, yAxiesVal]
-
-    def plot_Rf(self, start, amp, num=1):
-        xAxiesVal, yAxiesVal = self.prebGraphData(
-            start, amp, num, half_sin_wave, elevation=10, oscillation=True)
-        self.RFplotter.setData(xAxiesVal, yAxiesVal)
-
-    def plot_Gss(self, start, amp, num=1):
-        xAxiesVal, yAxiesVal = self.prebGraphData(
-            start, amp, num, square_wave, elevation=7.5, step=1)
-        self.GSSplotter.setData(xAxiesVal, yAxiesVal)
-
-    def plot_Gpe(self, start, amp, num=1):
-        xAxiesVal, yAxiesVal = self.prebGraphData(
-            start, amp, num, square_wave, repPerPlace=5, elevation=5, step=2)
-        self.GPEplotter.setData(xAxiesVal, yAxiesVal)
-
-    def plot_Gfe(self, start, amp, num=1):
-        xAxiesVal, yAxiesVal = self.prebGraphData(
-            start, amp, num, square_wave, elevation=2.5, step=1)
-        self.GFEplotter.setData(xAxiesVal, yAxiesVal)
-
-    def plot_RO(self, start, amp, num=1):
-        xAxiesVal, yAxiesVal = self.prebGraphData(
-            start, amp, num, half_sin_wave)
-        self.ROplotter.setData(xAxiesVal, yAxiesVal)
 
     @QtCore.pyqtSlot()
     def show_image_on_label(self, image_path):
@@ -207,7 +150,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def handle_mouse_press(self, event):
         try:
-            if self.ui.comboBox.currentText() == 'Image':
+
+            if self.ui.comboBox.currentText() == 'Show Phantom Image':
                 self.show_image_on_label(self.image_path)
                 x = event.pos().x()
                 y = event.pos().y()
@@ -234,7 +178,8 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.rect = QRect(x-5, y-5, 10, 10)
                     painter.drawRect(self.rect)  # Draw the new rectangle
                     self.ui.phantom_image_label.setPixmap(pixmap)
-
+            else:
+                print("Please select the phantom image first")
         except Exception as e:
             print(e)
 
@@ -432,6 +377,62 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.reconstructed_image_label.setPixmap(pixmap)
         self.ui.reconstructed_image_label.setMaximumSize(300, 300)
         self.ui.reconstructed_image_label.setMinimumSize(300, 300)
+
+    # sequence plotting
+
+    def browseFile(self):
+        # get jason file data and store it in a variable
+        self.fileName = QtWidgets.QFileDialog.getOpenFileName(
+            self, 'Open File', './', 'Json Files (*.json)')
+
+        self.update()
+
+    def update(self):
+        # get the values from the dictionary
+        self.data = json.load(open(self.fileName[0]))
+        self.plot_Rf(*self.data['RF'])
+        self.plot_Gss(*self.data['GSS'])
+        self.plot_Gpe(*self.data['GPE'])
+        self.plot_Gfe(*self.data['GFE'])
+        self.plot_RO(*self.data['RO'])
+
+    def prebGraphData(self, start, amp, num=1, function=half_sin_wave, repPerPlace=1, elevation=0, step=1, oscillation=False):
+        yAxiesVal = []
+        xAxiesVal = []
+
+        for j in range(int(num)):
+            for i in np.linspace(1, -1, repPerPlace):
+                yAxiesVal.extend(elevation + (function(amp) * i * np.power(-1, j))
+                                 if oscillation else elevation + (function(amp) * i))
+                xAxiesVal.extend(np.arange(start, start + 1, 1/100))
+            start += step
+
+        return [xAxiesVal, yAxiesVal]
+
+    def plot_Rf(self, start, amp, num=1):
+        xAxiesVal, yAxiesVal = self.prebGraphData(
+            start, amp, num, half_sin_wave, elevation=10, oscillation=True)
+        self.RFplotter.setData(xAxiesVal, yAxiesVal)
+
+    def plot_Gss(self, start, amp, num=1):
+        xAxiesVal, yAxiesVal = self.prebGraphData(
+            start, amp, num, square_wave, elevation=7.5, step=1)
+        self.GSSplotter.setData(xAxiesVal, yAxiesVal)
+
+    def plot_Gpe(self, start, amp, num=1):
+        xAxiesVal, yAxiesVal = self.prebGraphData(
+            start, amp, num, square_wave, repPerPlace=5, elevation=5, step=2)
+        self.GPEplotter.setData(xAxiesVal, yAxiesVal)
+
+    def plot_Gfe(self, start, amp, num=1):
+        xAxiesVal, yAxiesVal = self.prebGraphData(
+            start, amp, num, square_wave, elevation=2.5, step=1)
+        self.GFEplotter.setData(xAxiesVal, yAxiesVal)
+
+    def plot_RO(self, start, amp, num=1):
+        xAxiesVal, yAxiesVal = self.prebGraphData(
+            start, amp, num, half_sin_wave)
+        self.ROplotter.setData(xAxiesVal, yAxiesVal)
 
 
 if __name__ == '__main__':
