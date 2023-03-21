@@ -4,14 +4,20 @@
 import math
 import numpy as np
 import matplotlib.pyplot as plt
+import cv2
 # construct 4x4 image
-image = np.array([[1, 2, 3, 4],
-                  [5, 6, 7, 8],
-                  [9, 10, 11, 12],
-                  [13, 14, 15, 16]])
+# image = np.array([[1, 2, 3, 4],
+#                   [5, 6, 7, 8],
+#                   [9, 10, 11, 12],
+#                   [13, 14, 15, 16]])
 
-plt.imshow(image, cmap='gray')
-plt.show()
+image = cv2.imread('../images/shepp_logan_phantom/128px-Shepp_logan.png')
+# print(f"image shape: {image.shape}")
+# convert the image to numpy array
+# image = np.array(image)
+
+# plt.imshow(image, cmap='gray')
+# plt.show()
 a_fft = np.fft.fft2(image)
 
 # print the result
