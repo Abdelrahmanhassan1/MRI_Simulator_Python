@@ -9,6 +9,7 @@ import sys
 import numpy as np
 import pyqtgraph as pg
 import heapq
+import qimage2ndarray
 from ui_mainWindow import Ui_MainWindow
 
 
@@ -32,10 +33,11 @@ class MainWindow(QtWidgets.QMainWindow):
         # phantom image
         self.prev_x = 0
         self.prev_y = 0
+        self.scroll_flag = False
         self.phantom_image_resized = cv2.imread(
             "./images/phantom_modified/16x16.png", 0)
 
-        self.image_path = './images/shepp_logan_phantom/300px-Shepp_logan.png'
+        self.image_path = './images/phantom_modified/300px-Shepp_logan.png'
         self.ui.comboBox_2.currentIndexChanged.connect(
             self.change_phantom_size)
         self.ui.comboBox.currentIndexChanged.connect(
@@ -43,7 +45,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.modify_the_image_intensities_distribution(self.image_path)
         self.show_image_on_label(self.image_path)
         self.ui.phantom_image_label.mousePressEvent = self.handle_mouse_press
-        self.brightness = 100
+        self.brightness = 0
         self.ui.phantom_image_label.wheelEvent = self.handle_wheel_event
 
         # MRI Sequence
@@ -84,7 +86,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.read_dial_values_and_calculate_ernst)
 
     @QtCore.pyqtSlot()
-    def show_image_on_label(self, image_path):
+    def show_image_on_label(self, image_path, image=None):
         try:
             self.original_phantom_image = cv2.imread(image_path, 0)
             # modify the label size to fit the image
@@ -95,7 +97,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
             self.mean, self.std_dev = cv2.meanStdDev(
                 self.original_phantom_image)
-            img = QImage(image_path)
+            if image is None:
+                img = QImage(image_path)
+            else:
+                img = QImage(image, image.shape[1], image.shape[0],
+                             image.strides[0], QImage.Format_Grayscale8)
             pixmap = QPixmap.fromImage(img)
             self.ui.phantom_image_label.setPixmap(pixmap)
         except Exception as e:
@@ -103,48 +109,32 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def handle_wheel_event(self, event):
         try:
-            delta = event.angleDelta().y()
-            if delta > 0:
+            self.scroll_flag = True
+            # make a copy of  the original image to a new integer numpy array
+            orig_image = self.original_phantom_image.copy().astype(np.int32)
+            if event.angleDelta().y() > 0:
                 self.brightness += 10
             else:
                 self.brightness -= 10
 
-            # Set threshold for all white image
-            if self.brightness > 245:
-                self.brightness = 255
-            elif self.brightness < -245:
-                self.brightness = -255
+            self.img_enhanced = orig_image + self.brightness
 
-            img = self.original_phantom_image + self.brightness
+            # find the values that are greater than 255 and set them to 255
+            self.img_enhanced[self.img_enhanced > 255] = 255
+            self.img_enhanced[self.img_enhanced < 0] = 0
+            self.img_enhanced = self.img_enhanced.astype(np.uint8)
 
-            # img_min = img.min()
-            # img_max = img.max()
-            # img = (img - img_min) * 255.0 / (img_max - img_min)
+            # get the unique values
+            self.most_frequent = np.unique(
+                self.img_enhanced, return_counts=False)
 
-            # # Ensure that the values of img are between 0 and 255
-            # img = np.clip(img, 0, 255)
+            np.savetxt('./txt_files/most_frequent.txt',
+                       np.sort(self.most_frequent), fmt='%d')
 
-            indices = np.where(img > 255)
-
-            img[indices] = np.minimum(img[indices], 255)
-
-            indices = np.where(img < 0)
-
-            img[indices] = np.maximum(img[indices], 0)
-            # Convert the data type of img to uint8 (unsigned 8-bit integer)
-            np.savetxt('IMAGE.txt',
-                       img, fmt='%d')
-            img = img.astype(np.uint8)
-
-            # # # Invert the colors if necessary
-            # if img_max > 255:
-            #     img = 255 - img
-
-            # self.modify_the_image_intensities_distribution(self.image_path, img)
-
-            qtImg = QImage(img, img.shape[1], img.shape[0], img.strides[0],
-                           QImage.Format_Grayscale8)
-            self.ui.phantom_image_label.setPixmap(QPixmap.fromImage(qtImg))
+            qImage = QImage(self.img_enhanced, self.img_enhanced.shape[1], self.img_enhanced.shape[0],
+                            self.img_enhanced.strides[0], QImage.Format_Grayscale8)
+            pixmap = QPixmap.fromImage(qImage)
+            self.ui.phantom_image_label.setPixmap(pixmap)
         except Exception as e:
             print(e)
 
@@ -152,7 +142,12 @@ class MainWindow(QtWidgets.QMainWindow):
         try:
 
             if self.ui.comboBox.currentText() == 'Show Phantom Image':
-                self.show_image_on_label(self.image_path)
+                if self.scroll_flag:
+                    self.show_image_on_label(
+                        self.image_path, self.img_enhanced)
+                else:
+                    self.show_image_on_label(self.image_path)
+
                 x = event.pos().x()
                 y = event.pos().y()
                 # Get the color of the pixel at the clicked position
@@ -160,6 +155,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 if pixmap is not None:
                     pixel_color = pixmap.toImage().pixel(x, y)
                     intensity = QColor(pixel_color).getRgb()[0]
+                    print(intensity)
+                    print(self.most_frequent)
                     index = np.where(
                         self.most_frequent == intensity)[0][0]
                     t1 = self.t1Weight[index]
@@ -272,8 +269,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.phantom_image_resized = cv2.resize(
                     self.original_phantom_image, (64, 64))
 
-            self.modify_the_image_intensities_distribution(self.image_path)
-            self.show_image_on_label(self.image_path)
         except Exception as e:
             print(e)
 
