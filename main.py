@@ -32,7 +32,9 @@ class MainWindow(QtWidgets.QMainWindow):
         # phantom image
         self.prev_x = 0
         self.prev_y = 0
-        self.image_path = './images/shepp_logan_phantom/480px-Shepp_logan.png'
+        self.phantom_image_resized = cv2.imread(
+            "./images/phantom_modified/16x16.png", 0)
+        self.image_path = './images/shepp_logan_phantom/64x64.png'
         self.ui.comboBox_2.currentIndexChanged.connect(
             self.change_phantom_size)
         self.ui.comboBox.currentIndexChanged.connect(
@@ -66,6 +68,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ROplotter = self.ui.signalPlot.plot([], [], pen=self.greenPen)
 
         self.ui.browseFileBtn.released.connect(self.browseFile)
+        self.ui.pushButton.clicked.connect(
+            lambda: self.apply_rf_pulse(self.phantom_image_resized, 90))
+        self.ui.pushButton_2.clicked.connect(
+            lambda: self.apply_gradient(self.new_3D_matrix_image))
+
+        # self.ui.pushButton.clicked.connect(self.update_image)
         self.ui.updateBtn.released.connect(self.update)
 
         # MRI Sequence
@@ -338,182 +346,92 @@ class MainWindow(QtWidgets.QMainWindow):
         except Exception as e:
             print(e)
 
-    def apply_rf_pulse_on_image(self):
-        try:
-            # img = self.original_phantom_image.copy()
-            img = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
-            rows, columns = img.shape
+    def apply_rf_pulse(self, image, flip_angle):
+        rows, columns = image.shape
+        # make a rotation matrix with 90 along x-axis
+        theta = flip_angle * np.pi/180  # angle in radians
+        self.gx_phases = np.arange(0, 360, 360 / rows)
+        self.gy_phases = np.arange(0, 360, 360 / rows)
+        # rotation along y axis
+        rotation_matrix_in_y = np.array([[np.cos(theta), 0, np.sin(theta)],
+                                         [0, 1, 0],
+                                         [-np.sin(theta), 0, np.cos(theta)]])
 
-            # define the phase of the gradient in x and y direction
-            self.gx_phases = np.arange(0, 360, 360 / rows)
-            self.gy_phases = np.arange(0, 360, 360 / rows)
-            self.gy_counter = 0
-            self.kspace = np.zeros((rows, columns, 3))
-            new_3D_matrix_image = np.zeros((rows, columns, 3))
-            # make a rotation matrix with 90 along x-axis
-            theta = np.pi / 2  # angle in radians
-            rotation_matrix = np.array([[1, 0, 0],
-                                        [0, np.cos(theta), -np.sin(theta)],
-                                        [0, np.sin(theta), np.cos(theta)]])
-            # loop over each pixel in the image
-            for i in range(rows):
-                for j in range(columns):
-                    # define the vector Mo
-                    Mo = [0, 0, img[i, j]]
-                    # Multiply the vector v by the  rotation_matrix to get the flipped vector v_flipped
-                    Mo_flipped_xy_plane = np.round(
-                        np.dot(rotation_matrix, Mo), 2)
-                    new_3D_matrix_image[i, j] = Mo_flipped_xy_plane
+        self.new_3D_matrix_image = np.zeros((rows, columns, 3))
+        # loop over each pixel in the image
+        for i in range(rows):
+            for j in range(columns):
+                # define the vector Mo
+                Mo = [0, 0, image[i, j]]
+                # Multiply the vector v by the rotation matrix rotation_matrix_in_y to get the flipped vector v_flipped
+                Mo_flipped_xy_plane = np.round(
+                    np.dot(rotation_matrix_in_y, Mo), 2)
+                self.new_3D_matrix_image[i, j] = Mo_flipped_xy_plane
 
-            return new_3D_matrix_image
-        except Exception as e:
-            print(e)
+    def apply_gradient(self, image_after_rf_pulse):
+        backup_image = image_after_rf_pulse.copy()
+        rows, columns, _ = image_after_rf_pulse.shape
+        k_space_2d = np.zeros((rows, columns), dtype=complex)
+        k_space = np.ones((rows, columns))
+        phases = np.zeros((rows, columns))
 
-    def apply_phase_encoding_Gy_gradient(self, image_3d_matrix):
-        try:
-            # angle in radians
-            theta = self.gy_phases[self.gy_counter] * np.pi / 180
-
-            # make a 3d rotation_matrix in z direction
-            rotation_matrix = np.array([[np.cos(theta), np.sin(theta), 0],
-                                        [-np.sin(theta), np.cos(theta), 0],
-                                        [0, 0, 1]])
-
-            rows, columns = image_3d_matrix.shape[:2]
-            # loop over each pixel in the image
-            for i in range(rows):
-                for j in range(columns):
-                    # define the vector Mo
-                    Mo = image_3d_matrix[i, j]
-                    # Multiply the vector v by the rotation matrix R to get the flipped vector v_flipped
-                    Mo_flipped_xy_plane = np.round(
-                        np.dot(rotation_matrix, Mo), 2)
-
-                    image_3d_matrix[i, j] = Mo_flipped_xy_plane
-
-            self.gy_counter += 1
-
-            return image_3d_matrix
-        except Exception as e:
-            print(e)
-
-    def apply_freqency_encoding_Gx_gradient(self, image_3d_matrix_after_gy):
-        try:
-            # make a copy of the image
-
-            for index, phase in enumerate(self.gx_phases):
-                image_3d_matrix_copy = image_3d_matrix_after_gy.copy()
-                # angle in radians
-                theta = phase * np.pi / 180
-                # make a 3d rotation_matrix in z direction
-                rotation_matrix = np.array([[np.cos(theta), np.sin(theta), 0],
-                                            [-np.sin(theta), np.cos(theta), 0],
-                                            [0, 0, 1]])
-
-                rows, columns = image_3d_matrix_after_gy.shape[:2]
-                # loop over each pixel in the image
+        for row_index, gy_phase in enumerate(self.gy_phases):
+            for column_index, gx_phase in enumerate(self.gx_phases):
+                image_after_rf_pulse = backup_image.copy()
                 for i in range(rows):
                     for j in range(columns):
-                        # define the vector Mo
-                        Mo = image_3d_matrix_after_gy[i, j]
-                        # Multiply the vector v by the rotation matrix R to get the flipped vector v_flipped
-                        Mo_flipped_xy_plane = np.round(
-                            np.dot(rotation_matrix, Mo), 2)
+                        pixel_value = image_after_rf_pulse[i, j, 0]
+                        phase_from_gy = gy_phase * i
+                        phase_from_gx = gx_phase * j
+                        applied_phase = (phase_from_gx + phase_from_gy)
+                        phases[i, j] = applied_phase
+                        applied_phase *= np.pi/180
+                        new_x_value = pixel_value * np.cos(applied_phase)
+                        new_y_value = pixel_value * np.sin(applied_phase)
+                        image_after_rf_pulse[i, j, 0] = new_x_value
+                        image_after_rf_pulse[i, j, 1] = new_y_value
+                sum = np.round(np.sum(image_after_rf_pulse, axis=(0, 1)), 2)
+                k_space_2d[row_index][column_index] = np.round(
+                    sum[0], 2) - 1j * np.round(sum[1], 2)
 
-                        image_3d_matrix_copy[i, j] = Mo_flipped_xy_plane
+                k_space[row_index, column_index] = np.sqrt(
+                    sum[0]**2 + sum[1]**2)
 
-                self.kspace[self.gy_counter, index] = np.sum(
-                    image_3d_matrix_copy)
+                # self.update_kspace(k_space)
+        self.update_image(k_space_2d)
 
-        except Exception as e:
-            print(e)
+    def update_kspace(self, kspace):
 
-    def read_out_signal(self):
-        try:
-            for i in range(self.kspace.shape[0]):
-                for j in range(self.kspace.shape[1]):
-                    magnitude = self.kspace[i, j].real
-                    phase = self.kspace[i, j].imag
-        except Exception as e:
-            print(e)
+        resized = cv2.resize(kspace, (300, 300))
+        img = QImage(
+            resized.tobytes(), resized.shape[1], resized.shape[0], QImage.Format_Grayscale8)
 
-    def browseFile(self):
-        try:
-            # get jason file data and store it in a variable
-            self.fileName = QtWidgets.QFileDialog.getOpenFileName(
-                self, 'Open File', './', 'Json Files (*.json)')
+        pixmap = QPixmap.fromImage(img)
+        self.ui.k_space_label.setPixmap(pixmap)
+        self.ui.k_space_label.setMaximumSize(300, 300)
+        self.ui.k_space_label.setMinimumSize(300, 300)
 
-            self.update()
-        except Exception as e:
-            print(e)
+    def update_image(self, kspace_2d):
+        # image = cv2.imread(
+        #     './images/phantom_modified/16x16.png', cv2.IMREAD_GRAYSCALE)
 
-    def update(self):
-        try:
-            # get the values from the dictionary
-            self.data = json.load(open(self.fileName[0]))
-            self.plot_Rf(*self.data['RF'])
-            self.plot_Gss(*self.data['GSS'])
-            self.plot_Gpe(*self.data['GPE'])
-            self.plot_Gfe(*self.data['GFE'])
-            self.plot_RO(*self.data['RO'])
-        except Exception as e:
-            print(e)
+        # kspace_2d_1 = np.fft.fft2(image)
+        # img = np.fft.ifft2(kspace_2d_1)
+        img = np.fft.ifft2(kspace_2d)
+        img = np.real(img).astype(np.uint8)
+        # cv2.imwrite('./images/features_images/kspace_2d.png', img)
+        # arr2 = cv2.imread('./images/features_images/kspace_2d.png')
+        # height, width, _ = kspace_2d_1.shape
 
-    def prebGraphData(self, start, amp, num=1, function=half_sin_wave, repPerPlace=1, elevation=0, step=1, oscillation=False):
-        try:
-            yAxiesVal = []
-            xAxiesVal = []
-
-            for j in range(int(num)):
-                for i in np.linspace(1, -1, repPerPlace):
-                    yAxiesVal.extend(elevation + (function(amp) * i * np.power(-1, j))
-                                     if oscillation else elevation + (function(amp) * i))
-                    xAxiesVal.extend(np.arange(start, start + 1, 1/100))
-                start += step
-
-            return [xAxiesVal, yAxiesVal]
-        except Exception as e:
-            print(e)
-
-    def plot_Rf(self, start, amp, num=1):
-        try:
-            xAxiesVal, yAxiesVal = self.prebGraphData(
-                start, amp, num, half_sin_wave, elevation=10, oscillation=True)
-            self.RFplotter.setData(xAxiesVal, yAxiesVal)
-        except Exception as e:
-            print(e)
-
-    def plot_Gss(self, start, amp, num=1):
-        try:
-            xAxiesVal, yAxiesVal = self.prebGraphData(
-                start, amp, num, square_wave, elevation=7.5, step=1)
-            self.GSSplotter.setData(xAxiesVal, yAxiesVal)
-        except Exception as e:
-            print(e)
-
-    def plot_Gpe(self, start, amp, num=1):
-        try:
-            xAxiesVal, yAxiesVal = self.prebGraphData(
-                start, amp, num, square_wave, repPerPlace=5, elevation=5, step=2)
-            self.GPEplotter.setData(xAxiesVal, yAxiesVal)
-        except Exception as e:
-            print(e)
-
-    def plot_Gfe(self, start, amp, num=1):
-        try:
-            xAxiesVal, yAxiesVal = self.prebGraphData(
-                start, amp, num, square_wave, elevation=2.5, step=1)
-            self.GFEplotter.setData(xAxiesVal, yAxiesVal)
-        except Exception as e:
-            print(e)
-
-    def plot_RO(self, start, amp, num=1):
-        try:
-            xAxiesVal, yAxiesVal = self.prebGraphData(
-                start, amp, num, half_sin_wave)
-            self.ROplotter.setData(xAxiesVal, yAxiesVal)
-        except Exception as e:
-            print(e)
+        # img = QImage(arr2, width=width, height=height,
+        #              format=QImage.Format_Grayscale8)
+        resized = cv2.resize(img, (300, 300))
+        new_img = QImage(resized.tobytes(), resized.shape[1], resized.shape[0],
+                         QImage.Format_Grayscale8)
+        pixmap = QPixmap.fromImage(new_img)
+        self.ui.reconstructed_image_label.setPixmap(pixmap)
+        self.ui.reconstructed_image_label.setMaximumSize(300, 300)
+        self.ui.reconstructed_image_label.setMinimumSize(300, 300)
 
 
 if __name__ == '__main__':
