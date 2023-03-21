@@ -70,6 +70,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.GPEplotter = self.ui.signalPlot.plot([], [], pen=self.bluePen)
         self.GFEplotter = self.ui.signalPlot.plot([], [], pen=self.redPen)
         self.ROplotter = self.ui.signalPlot.plot([], [], pen=self.greenPen)
+        self.startingTR_plotter = self.ui.signalPlot.plot(
+            [], [], pen=self.whitePen)
+        self.TE_plotter = self.ui.signalPlot.plot([], [], pen=self.whitePen)
+        self.TE_horizontal_title = self.ui.signalPlot.plot(
+            [], [], pen=self.whitePen)
 
         self.ui.browseFileBtn.released.connect(self.browseFile)
         self.ui.updateBtn.released.connect(self.update)
@@ -409,6 +414,10 @@ class MainWindow(QtWidgets.QMainWindow):
             start, amp, num, half_sin_wave, elevation=10, oscillation=True)
         self.RFplotter.setData(xAxiesVal, yAxiesVal)
 
+        self.starting_TR_postion = xAxiesVal[50]
+        self.startingTR_plotter.setData(
+            np.repeat(self.starting_TR_postion, 50), np.linspace(0, 12.5, 50))
+
     def plot_Gss(self, start, amp, num=1):
         xAxiesVal, yAxiesVal = self.prebGraphData(
             start, amp, num, square_wave, elevation=7.5, step=1)
@@ -428,6 +437,16 @@ class MainWindow(QtWidgets.QMainWindow):
         xAxiesVal, yAxiesVal = self.prebGraphData(
             start, amp, num, half_sin_wave)
         self.ROplotter.setData(xAxiesVal, yAxiesVal)
+
+        self.TE_postion = xAxiesVal[50]
+        self.TE_plotter.setData(np.repeat(self.TE_postion, 50),
+                                np.linspace(0, 12.5, 50))
+        self.TE_horizontal_title.setData(np.linspace(self.starting_TR_postion, self.TE_postion, 50),
+                                         np.repeat(1.8, 50))
+        text = pg.TextItem(
+            text=f"TE= {np.round(self.TE_postion - self.starting_TR_postion,2)} s", anchor=(0, 0))
+        text.setPos(self.starting_TR_postion, 1.8)
+        self.ui.signalPlot.addItem(text)
 
 
 if __name__ == '__main__':
