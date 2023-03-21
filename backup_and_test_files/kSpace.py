@@ -4,8 +4,14 @@
 import math
 import numpy as np
 import matplotlib.pyplot as plt
+# construct 4x4 image
+image = np.array([[1, 2, 3, 4],
+                  [5, 6, 7, 8],
+                  [9, 10, 11, 12],
+                  [13, 14, 15, 16]])
 
-image = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+plt.imshow(image, cmap='gray')
+plt.show()
 a_fft = np.fft.fft2(image)
 
 # print the result
@@ -15,6 +21,10 @@ a_ifft = np.fft.ifft2(a_fft)
 
 # parse the type to be int not complex numbers
 a_ifft = a_ifft.real
+
+# plot the image after fft and ifft
+# plt.imshow(a_ifft, cmap='gray')
+# plt.show()
 
 # print the result
 # print(f"ifft2 result: {a_ifft}")
@@ -47,11 +57,43 @@ def apply_rf_pulse(image, flip_angle):
 
 # print(apply_rf_pulse(image, 60))
 
+def update_kspace(kspace):
+    # plot k_space as image
+    plt.rcParams["figure.figsize"] = [7.00, 3.50]
+
+    plt.rcParams["figure.autolayout"] = True
+
+    # make the background white
+    plt.rcParams['axes.facecolor'] = 'white'
+
+    # Plot the data using imshow with gray colormap but the background is white
+    plt.imshow(kspace, cmap='gray')
+
+    # Display the plot
+
+    plt.show()
+
+
+def update_image(kspace_2d):
+    # kspace_2d_e = np.fft.ifft2(kspace_2d)
+    # # print(f"kspace_2d", kspace_2d)
+    # kspace_2d_a = np.round(kspace_2d_e.real, 2)
+    # # print(f"inverse kspace_2d", kspace_2d)
+
+    # plt.imshow(kspace_2d_a, cmap='gray')
+    # plt.show()
+    # reverse the 2D fourier transform
+    img = np.fft.ifft2(kspace_2d)
+    img = np.real(img).astype(np.uint8)
+    plt.imshow(img, cmap='gray')
+    plt.show()
+
 
 def apply_sequence(image_after_rf_pulse):
     backup_image = image_after_rf_pulse.copy()
     rows, columns, _ = image_after_rf_pulse.shape
     k_space_2d = np.zeros((rows, columns), dtype=complex)
+    k_space = np.ones((rows, columns))
     phases = np.zeros((rows, columns))
     gx_phases = np.arange(0, 360, 360 / rows)
     gy_phases = np.arange(0, 360, 360 / rows)
@@ -67,8 +109,8 @@ def apply_sequence(image_after_rf_pulse):
                     pixel_value = image_after_rf_pulse[i, j, 0]
                     # print(
                     #     f"at row index {gy_phase} and column index {gx_phase} pixel value is {pixel_value} ")
-                    phase_from_gy = (gy_phase / (rows-1)) * i
-                    phase_from_gx = (gx_phase / (columns-1)) * j
+                    phase_from_gy = gy_phase * i
+                    phase_from_gx = gx_phase * j
                     applied_phase = (phase_from_gx + phase_from_gy)
                     phases[i, j] = applied_phase
                     applied_phase *= np.pi/180
@@ -77,7 +119,7 @@ def apply_sequence(image_after_rf_pulse):
                     new_y_value = pixel_value * np.sin(applied_phase)
                     image_after_rf_pulse[i, j, 0] = new_x_value
                     image_after_rf_pulse[i, j, 1] = new_y_value
-            print(f"phases \n", phases)
+            # print(f"phases \n", phases)
             # print(f"image_after_rf_pulse", image_after_rf_pulse)
             # sum the image vectors
             sum = np.round(np.sum(image_after_rf_pulse, axis=(0, 1)), 2)
@@ -88,10 +130,22 @@ def apply_sequence(image_after_rf_pulse):
             # M = np.sqrt(sum[0]**2 + sum[1]**2)
             # print(M)
             # k_space[row_index, column_index] = M
-            k_space_2d[row_index][column_index] = sum[0] + 1j * sum[1]
+            k_space_2d[row_index][column_index] = np.round(
+                sum[0], 2) - 1j * np.round(sum[1], 2)
+            # magnitude of the vector
+            k_space[row_index, column_index] = np.sqrt(sum[0]**2 + sum[1]**2)
+            # print(f"k_space \n", k_space)
+            # update_kspace(k_space)
+    # update_image(k_space_2d)
+    img = np.fft.ifft2(k_space_2d)
+    img = np.real(img).astype(np.uint8)
+    plt.imshow(img, cmap='gray')
+    plt.show()
 
-    print("=============================================")
+    # print("=============================================")
     print(f"k_space 2d \n", k_space_2d)
+    # print(f"k_space \n", k_space)
+
     # plt.rcParams["figure.figsize"] = [7.00, 3.50]
 
     # plt.rcParams["figure.autolayout"] = True
@@ -108,7 +162,7 @@ def apply_sequence(image_after_rf_pulse):
     # k_space_2d = k_space_2d.real
     # print(f"inverse k_space_2d", k_space_2d)
     # k_space = np.fft.fftshift(k_space)
-    # plt.imshow(k_space, cmap='gray')
+    # plt.imshow(k_space_2d, cmap='gray')
     # plt.show()
 
 

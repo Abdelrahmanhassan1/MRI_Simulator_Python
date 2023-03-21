@@ -12,7 +12,6 @@ import heapq
 from ui_mainWindow import Ui_MainWindow
 
 
-
 def square_wave(Amp, NumOfPoints=100):
     arr = np.full(NumOfPoints, Amp)
     arr[0], arr[-1] = 0, 0
@@ -166,22 +165,29 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.brightness = -255
 
             img = self.original_phantom_image + self.brightness
+
+            # img_min = img.min()
+            # img_max = img.max()
+            # img = (img - img_min) * 255.0 / (img_max - img_min)
+
+            # # Ensure that the values of img are between 0 and 255
+            # img = np.clip(img, 0, 255)
+
+            indices = np.where(img > 255)
+
+            img[indices] = np.minimum(img[indices], 255)
+
+            indices = np.where(img < 0)
+
+            img[indices] = np.maximum(img[indices], 0)
+            # Convert the data type of img to uint8 (unsigned 8-bit integer)
             np.savetxt('IMAGE.txt',
                        img, fmt='%d')
-
-            img_min = img.min()
-            img_max = img.max()
-            img = (img - img_min) * 255.0 / (img_max - img_min)
-
-            # Ensure that the values of img are between 0 and 255
-            img = np.clip(img, 0, 255)
-
-            # Convert the data type of img to uint8 (unsigned 8-bit integer)
             img = img.astype(np.uint8)
 
-            # # Invert the colors if necessary
-            if img_max > 255:
-                img = 255 - img
+            # # # Invert the colors if necessary
+            # if img_max > 255:
+            #     img = 255 - img
 
             # self.modify_the_image_intensities_distribution(self.image_path, img)
 
