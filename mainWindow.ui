@@ -20,9 +20,9 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QHBoxLayout" name="horizontalLayout_13">
+   <layout class="QVBoxLayout" name="verticalLayout_15">
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_12">
+     <layout class="QHBoxLayout" name="horizontalLayout_13">
       <item>
        <layout class="QVBoxLayout" name="verticalLayout">
         <item>
@@ -188,11 +188,8 @@
        </layout>
       </item>
       <item>
-       <widget class="QSplitter" name="splitter">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-        <widget class="QWidget" name="layoutWidget">
+       <layout class="QHBoxLayout" name="horizontalLayout_12">
+        <item>
          <layout class="QVBoxLayout" name="verticalLayout_3">
           <item>
            <widget class="QLabel" name="label_16">
@@ -266,9 +263,9 @@
            </widget>
           </item>
          </layout>
-        </widget>
-        <widget class="QWidget" name="layoutWidget">
-         <layout class="QVBoxLayout" name="verticalLayout_9">
+        </item>
+        <item>
+         <layout class="QVBoxLayout" name="verticalLayout_14">
           <item>
            <layout class="QVBoxLayout" name="verticalLayout_2">
             <item>
@@ -608,6 +605,18 @@
              <layout class="QVBoxLayout" name="verticalLayout_10">
               <item>
                <widget class="QLabel" name="label_14">
+                <property name="minimumSize">
+                 <size>
+                  <width>0</width>
+                  <height>20</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>16777215</width>
+                  <height>20</height>
+                 </size>
+                </property>
                 <property name="font">
                  <font>
                   <pointsize>10</pointsize>
@@ -622,30 +631,26 @@
                </widget>
               </item>
               <item>
-               <widget class="QLabel" name="k_space_label">
-                <property name="minimumSize">
-                 <size>
-                  <width>300</width>
-                  <height>300</height>
-                 </size>
-                </property>
-                <property name="maximumSize">
-                 <size>
-                  <width>300</width>
-                  <height>300</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-               </widget>
+               <layout class="QVBoxLayout" name="verticalLayout_9"/>
               </item>
              </layout>
             </item>
             <item>
-             <layout class="QVBoxLayout" name="verticalLayout_12">
+             <layout class="QVBoxLayout" name="verticalLayout_13">
               <item>
                <widget class="QLabel" name="label_15">
+                <property name="minimumSize">
+                 <size>
+                  <width>0</width>
+                  <height>20</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>16777215</width>
+                  <height>20</height>
+                 </size>
+                </property>
                 <property name="font">
                  <font>
                   <pointsize>10</pointsize>
@@ -660,31 +665,15 @@
                </widget>
               </item>
               <item>
-               <widget class="QLabel" name="reconstructed_image_label">
-                <property name="minimumSize">
-                 <size>
-                  <width>300</width>
-                  <height>300</height>
-                 </size>
-                </property>
-                <property name="maximumSize">
-                 <size>
-                  <width>300</width>
-                  <height>300</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-               </widget>
+               <layout class="QVBoxLayout" name="verticalLayout_12"/>
               </item>
              </layout>
             </item>
            </layout>
           </item>
          </layout>
-        </widget>
-       </widget>
+        </item>
+       </layout>
       </item>
      </layout>
     </item>

@@ -1,6 +1,7 @@
 from collections import Counter
 import json
 import math
+import time
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtGui import QPixmap, QImage, QColor, QPainter, QPen, QBrush
 from PyQt5.QtCore import Qt, QRect
@@ -10,6 +11,8 @@ import numpy as np
 import pyqtgraph as pg
 import heapq
 import qimage2ndarray
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
 from ui_mainWindow import Ui_MainWindow
 
 
@@ -29,11 +32,22 @@ class MainWindow(QtWidgets.QMainWindow):
         super(MainWindow, self).__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        ##to control brightness of phantom
+        # to control brightness of phantom
         self.setMouseTracking(True)
         self.dragging = False
         self.prev_pos = None
         self.brightness_factor = 0
+
+        # kspace figure
+        self.kspace_figure = Figure()
+        self.kspace_canvas = FigureCanvas(self.kspace_figure)
+        self.ui.verticalLayout_9.addWidget(self.kspace_canvas)
+
+        # reconstructed image figure
+        self.reconstructed_image_figure = Figure()
+        self.reconstructed_image_canvas = FigureCanvas(
+            self.reconstructed_image_figure)
+        self.ui.verticalLayout_12.addWidget(self.reconstructed_image_canvas)
 
         # phantom image
         self.prev_x = 0
@@ -89,6 +103,7 @@ class MainWindow(QtWidgets.QMainWindow):
             lambda: self.apply_rf_pulse(self.phantom_image_resized, 90))
         self.ui.pushButton_2.released.connect(
             lambda: self.apply_gradient(self.new_3D_matrix_image))
+
         self.read_dial_values_and_calculate_ernst()
         self.ui.dial.valueChanged.connect(
             self.read_dial_values_and_calculate_ernst)
@@ -113,60 +128,62 @@ class MainWindow(QtWidgets.QMainWindow):
                 img = QImage(image, image.shape[1], image.shape[0],
                              image.strides[0], QImage.Format_Grayscale8)
             pixmap = QPixmap.fromImage(img)
-            ## as it will use in control brightness
-            self.image = pixmap.toImage()
-            width = self.image.width()
-            height = self.image.height()
-            buffer = self.image.bits().asstring(width * height * 4)
-            img = np.frombuffer(buffer, dtype=np.uint8).reshape((height, width, 4))
-            img = cv2.cvtColor(img, cv2.COLOR_RGBA2RGB)
-            img_hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
-            self.value = img_hsv[:, :, 2]
-            self.img_hsv_manipulated = img_hsv.copy()
-            ##end of control brightness
             self.ui.phantom_image_label.setPixmap(pixmap)
         except Exception as e:
             print(e)
 
     def mousePressEvent(self, event):
-        if event.button() == Qt.LeftButton:
-            self.dragging = True
-            self.prev_pos = event.pos()
+        try:
+            if event.button() == Qt.LeftButton:
+                self.dragging = True
+                self.prev_pos = event.pos()
+        except Exception as e:
+            print(e)
 
     def mouseReleaseEvent(self, event):
-        if event.button() == Qt.LeftButton:
-            self.dragging = False
-            self.prev_pos = None
+        try:
+            if event.button() == Qt.LeftButton:
+                self.dragging = False
+                self.prev_pos = None
+        except Exception as e:
+            print(e)
 
     def mouseMoveEvent(self, event):
-        if self.dragging:
-            delta = event.pos() - self.prev_pos
-            print(f"event.pos() = {event.pos().x()} , {event.pos().y()}")
-            print(f"self.prev_pos = {self.prev_pos.x()} , {self.prev_pos.y()}")
-            print(f"delta = {delta.x()} , {delta.y()}")
-            # self.brightness_factor += delta.y() / 100.0
-            self.prev_pos = event.pos()
-            if ((delta.x() > 0) and (delta.y() == 0) and (self.brightness_factor <250)):
-                self.brightness_factor += 2
-                print(f"self.brightness_factor = {self.brightness_factor}")
-                self.update_brightness()
-            elif ((delta.x() < 0) and (delta.y() == 0)and (self.brightness_factor >-250)):
-                self.brightness_factor += -2
-                print(f"self.brightness_factor = {self.brightness_factor}")
-                self.update_brightness()
+        try:
+            if self.dragging:
+                delta = event.pos() - self.prev_pos
+                # print(f"event.pos() = {event.pos().x()} , {event.pos().y()}")
+                # print(f"self.prev_pos = {self.prev_pos.x()} , {self.prev_pos.y()}")
+                # print(f"delta = {delta.x()} , {delta.y()}")
+                # self.brightness_factor += delta.y() / 100.0
+                self.prev_pos = event.pos()
+                if ((delta.x() > 0) and (delta.y() == 0) and (self.brightness_factor < 250)):
+                    self.brightness_factor += 2
+                    # print(f"self.brightness_factor = {self.brightness_factor}")
+                    self.update_brightness()
+                elif ((delta.x() < 0) and (delta.y() == 0) and (self.brightness_factor > -250)):
+                    self.brightness_factor += -2
+                    # print(f"self.brightness_factor = {self.brightness_factor}")
+                    self.update_brightness()
+        except Exception as e:
+            print(e)
 
     def update_brightness(self):
-        print(f"self.dragging = {self.dragging}")
+        try:
+            # print(f"self.dragging = {self.dragging}")
 
-        value_manipulated = cv2.add(self.value, self.brightness_factor)
-        print(f"value = {value_manipulated}")
-        self.img_hsv_manipulated[:, :, 2] = value_manipulated
-        img_rgb = cv2.cvtColor(self.img_hsv_manipulated, cv2.COLOR_HSV2RGB)
-        qimage = QImage(img_rgb.data, img_rgb.shape[1], img_rgb.shape[0], QImage.Format_RGB888)
+            value_manipulated = cv2.add(self.value, self.brightness_factor)
+            # print(f"value = {value_manipulated}")
+            self.img_hsv_manipulated[:, :, 2] = value_manipulated
+            img_rgb = cv2.cvtColor(self.img_hsv_manipulated, cv2.COLOR_HSV2RGB)
+            qimage = QImage(
+                img_rgb.data, img_rgb.shape[1], img_rgb.shape[0], QImage.Format_RGB888)
 
-        new_pixmap = QPixmap.fromImage(qimage)
+            new_pixmap = QPixmap.fromImage(qimage)
 
-        self.ui.phantom_image_label.setPixmap(new_pixmap)
+            self.ui.phantom_image_label.setPixmap(new_pixmap)
+        except Exception as e:
+            print(e)
 
     def handle_wheel_event(self, event):
         try:
@@ -201,7 +218,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def handle_mouse_press(self, event):
         try:
-
             if self.ui.comboBox.currentText() == 'Show Phantom Image':
                 if self.scroll_flag:
                     self.show_image_on_label(
@@ -216,8 +232,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 if pixmap is not None:
                     pixel_color = pixmap.toImage().pixel(x, y)
                     intensity = QColor(pixel_color).getRgb()[0]
-                    print(intensity)
-                    print(self.most_frequent)
+
                     index = np.where(
                         self.most_frequent == intensity)[0][0]
                     t1 = self.t1Weight[index]
@@ -276,7 +291,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             self.t1Weight = [25, 50, 75, 100, 125, 150, 175, 200, 225, 250]
             self.t2Weight = [250, 225, 200, 175, 150, 125, 100, 75, 50, 25]
-            self.PDWeight = [255, 255, 255, 255, 255, 255, 255, 255, 255, 255]
+            self.PDWeight = [70, 57, 95, 119, 120, 121, 122, 146, 254, 255]
 
             for i, intensity in enumerate(self.most_frequent):
                 self.t1WeightedImage[modified_img ==
@@ -301,15 +316,20 @@ class MainWindow(QtWidgets.QMainWindow):
         try:
             if self.ui.comboBox.currentIndex() == 0:
                 self.show_image_on_label(self.image_path)
-            elif self.ui.comboBox.currentIndex() == 1:
-                self.show_image_on_label(
-                    './images/features_images/t1WeightedImage.png')
-            elif self.ui.comboBox.currentIndex() == 2:
-                self.show_image_on_label(
-                    './images/features_images/t2WeightedImage.png')
-            elif self.ui.comboBox.currentIndex() == 3:
-                self.show_image_on_label(
-                    './images/features_images/PDWeightedImage.png')
+            else:
+                self.ui.label_4.setText('0')
+                self.ui.label_5.setText('0')
+                self.ui.label_6.setText('0')
+
+                if self.ui.comboBox.currentIndex() == 1:
+                    self.show_image_on_label(
+                        './images/features_images/t1WeightedImage.png')
+                elif self.ui.comboBox.currentIndex() == 2:
+                    self.show_image_on_label(
+                        './images/features_images/t2WeightedImage.png')
+                elif self.ui.comboBox.currentIndex() == 3:
+                    self.show_image_on_label(
+                        './images/features_images/PDWeightedImage.png')
         except Exception as e:
             print(e)
 
@@ -348,161 +368,196 @@ class MainWindow(QtWidgets.QMainWindow):
             print(e)
 
     def apply_rf_pulse(self, image, flip_angle):
-        rows, columns = image.shape
-        # make a rotation matrix with 90 along x-axis
-        theta = flip_angle * np.pi/180  # angle in radians
-        self.gx_phases = np.arange(0, 360, 360 / rows)
-        self.gy_phases = np.arange(0, 360, 360 / rows)
-        # rotation along y axis
-        rotation_matrix_in_y = np.array([[np.cos(theta), 0, np.sin(theta)],
-                                         [0, 1, 0],
-                                         [-np.sin(theta), 0, np.cos(theta)]])
+        try:
+            rows, columns = image.shape
+            # make a rotation matrix with 90 along x-axis
+            theta = flip_angle * np.pi/180  # angle in radians
+            self.gx_phases = np.arange(0, 360, 360 / rows)
+            self.gy_phases = np.arange(0, 360, 360 / rows)
+            # rotation along y axis
+            rotation_matrix_in_y = np.array([[np.cos(theta), 0, np.sin(theta)],
+                                            [0, 1, 0],
+                                            [-np.sin(theta), 0, np.cos(theta)]])
 
-        self.new_3D_matrix_image = np.zeros((rows, columns, 3))
-        # loop over each pixel in the image
-        for i in range(rows):
-            for j in range(columns):
-                # define the vector Mo
-                Mo = [0, 0, image[i, j]]
-                # Multiply the vector v by the rotation matrix rotation_matrix_in_y to get the flipped vector v_flipped
-                Mo_flipped_xy_plane = np.round(
-                    np.dot(rotation_matrix_in_y, Mo), 2)
-                self.new_3D_matrix_image[i, j] = Mo_flipped_xy_plane
+            self.new_3D_matrix_image = np.zeros((rows, columns, 3))
+            # loop over each pixel in the image
+            for i in range(rows):
+                for j in range(columns):
+                    # define the vector Mo
+                    Mo = [0, 0, image[i, j]]
+                    # Multiply the vector v by the rotation matrix rotation_matrix_in_y to get the flipped vector v_flipped
+                    Mo_flipped_xy_plane = np.round(
+                        np.dot(rotation_matrix_in_y, Mo), 2)
+                    self.new_3D_matrix_image[i, j] = Mo_flipped_xy_plane
+        except Exception as e:
+            print(e)
 
     def apply_gradient(self, image_after_rf_pulse):
-        backup_image = image_after_rf_pulse.copy()
-        rows, columns, _ = image_after_rf_pulse.shape
-        k_space_2d = np.zeros((rows, columns), dtype=complex)
-        k_space = np.ones((rows, columns))
-        phases = np.zeros((rows, columns))
+        try:
+            backup_image = image_after_rf_pulse.copy()
+            rows, columns, _ = image_after_rf_pulse.shape
+            k_space_2d = np.zeros((rows, columns), dtype=complex)
+            k_space = np.zeros((rows, columns))
+            phases = np.zeros((rows, columns))
 
-        for row_index, gy_phase in enumerate(self.gy_phases):
-            for column_index, gx_phase in enumerate(self.gx_phases):
-                image_after_rf_pulse = backup_image.copy()
-                for i in range(rows):
-                    for j in range(columns):
-                        pixel_value = image_after_rf_pulse[i, j, 0]
-                        phase_from_gy = gy_phase * i
-                        phase_from_gx = gx_phase * j
-                        applied_phase = (phase_from_gx + phase_from_gy)
-                        phases[i, j] = applied_phase
-                        applied_phase *= np.pi/180
-                        new_x_value = pixel_value * np.cos(applied_phase)
-                        new_y_value = pixel_value * np.sin(applied_phase)
-                        image_after_rf_pulse[i, j, 0] = new_x_value
-                        image_after_rf_pulse[i, j, 1] = new_y_value
-                sum = np.round(np.sum(image_after_rf_pulse, axis=(0, 1)), 2)
-                k_space_2d[row_index][column_index] = np.round(
-                    sum[0], 2) - 1j * np.round(sum[1], 2)
+            for row_index, gy_phase in enumerate(self.gy_phases):
+                for column_index, gx_phase in enumerate(self.gx_phases):
+                    image_after_rf_pulse = backup_image.copy()
+                    for i in range(rows):
+                        for j in range(columns):
+                            pixel_value = image_after_rf_pulse[i, j, 0]
+                            phase_from_gy = gy_phase * i
+                            phase_from_gx = gx_phase * j
+                            applied_phase = (phase_from_gx + phase_from_gy)
+                            phases[i, j] = applied_phase
+                            applied_phase *= np.pi/180
+                            new_x_value = pixel_value * np.cos(applied_phase)
+                            new_y_value = pixel_value * np.sin(applied_phase)
+                            image_after_rf_pulse[i, j, 0] = new_x_value
+                            image_after_rf_pulse[i, j, 1] = new_y_value
+                    sum = np.round(
+                        np.sum(image_after_rf_pulse, axis=(0, 1)), 2)
+                    k_space_2d[row_index][column_index] = np.round(
+                        sum[0], 2) - 1j * np.round(sum[1], 2)
 
-                k_space[row_index, column_index] = np.sqrt(
-                    sum[0]**2 + sum[1]**2)
+                    k_space[row_index, column_index] = np.sqrt(
+                        sum[0]**2 + sum[1]**2)
 
-                # self.update_kspace(k_space)
-        self.update_image(k_space_2d)
+                    self.update_kspace(k_space)
+                    self.update_image(k_space_2d)
+        except Exception as e:
+            print(e)
 
     def update_kspace(self, kspace):
+        try:
+            self.kspace_figure.clear()
+            axes = self.kspace_figure.gca()
+            axes.set_facecolor((1, 1, 1))
+            axes.set_xticks([])
+            axes.set_yticks([])
+            axes.xaxis.set_label_text('Kx')
+            axes.yaxis.set_label_text('Ky')
+            axes.xaxis.tick_top()
 
-        resized = cv2.resize(kspace, (300, 300))
-        img = QImage(
-            resized.tobytes(), resized.shape[1], resized.shape[0], QImage.Format_Grayscale8)
+            axes.imshow(kspace, cmap='gray')
 
-        pixmap = QPixmap.fromImage(img)
-        self.ui.k_space_label.setPixmap(pixmap)
-        self.ui.k_space_label.setMaximumSize(300, 300)
-        self.ui.k_space_label.setMinimumSize(300, 300)
+            self.kspace_figure.canvas.draw()
+            self.kspace_figure.canvas.flush_events()
+        except Exception as e:
+            print(e)
 
     def update_image(self, kspace_2d):
-        # image = cv2.imread(
-        #     './images/phantom_modified/16x16.png', cv2.IMREAD_GRAYSCALE)
+        try:
+            self.reconstructed_image_figure.clear()
+            axes = self.reconstructed_image_figure.gca()
+            axes.set_facecolor((1, 1, 1))
+            axes.xaxis.set_label_text('Kx')
+            axes.yaxis.set_label_text('Ky')
+            axes.xaxis.tick_top()
+            axes.set_xticks([])
+            axes.set_yticks([])
 
-        # kspace_2d_1 = np.fft.fft2(image)
-        # img = np.fft.ifft2(kspace_2d_1)
-        img = np.fft.ifft2(kspace_2d)
-        img = np.real(img).astype(np.uint8)
-        # cv2.imwrite('./images/features_images/kspace_2d.png', img)
-        # arr2 = cv2.imread('./images/features_images/kspace_2d.png')
-        # height, width, _ = kspace_2d_1.shape
+            img = np.fft.ifft2(kspace_2d)
+            img = np.real(img).astype(np.uint8)
 
-        # img = QImage(arr2, width=width, height=height,
-        #              format=QImage.Format_Grayscale8)
-        resized = cv2.resize(img, (300, 300))
-        new_img = QImage(resized.tobytes(), resized.shape[1], resized.shape[0],
-                         QImage.Format_Grayscale8)
-        pixmap = QPixmap.fromImage(new_img)
-        self.ui.reconstructed_image_label.setPixmap(pixmap)
-        self.ui.reconstructed_image_label.setMaximumSize(300, 300)
-        self.ui.reconstructed_image_label.setMinimumSize(300, 300)
-
+            axes.imshow(img, cmap='gray')
+            self.reconstructed_image_figure.canvas.draw()
+            self.reconstructed_image_figure.canvas.flush_events()
+        except Exception as e:
+            print(e)
     # sequence plotting
 
     def browseFile(self):
-        # get jason file data and store it in a variable
-        self.fileName = QtWidgets.QFileDialog.getOpenFileName(
-            self, 'Open File', './', 'Json Files (*.json)')
+        try:
+            # get jason file data and store it in a variable
+            self.fileName = QtWidgets.QFileDialog.getOpenFileName(
+                self, 'Open File', './', 'Json Files (*.json)')
 
-        self.update()
+            self.update()
+        except Exception as e:
+            print(e)
 
     def update(self):
-        # get the values from the dictionary
-        self.data = json.load(open(self.fileName[0]))
-        self.plot_Rf(*self.data['RF'])
-        self.plot_Gss(*self.data['GSS'])
-        self.plot_Gpe(*self.data['GPE'])
-        self.plot_Gfe(*self.data['GFE'])
-        self.plot_RO(*self.data['RO'])
+        try:
+            # get the values from the dictionary
+            self.data = json.load(open(self.fileName[0]))
+            self.plot_Rf(*self.data['RF'])
+            self.plot_Gss(*self.data['GSS'])
+            self.plot_Gpe(*self.data['GPE'])
+            self.plot_Gfe(*self.data['GFE'])
+            self.plot_RO(*self.data['RO'])
+        except Exception as e:
+            print(e)
 
     def prebGraphData(self, start, amp, num=1, function=half_sin_wave, repPerPlace=1, elevation=0, step=1, oscillation=False):
-        yAxiesVal = []
-        xAxiesVal = []
+        try:
+            yAxiesVal = []
+            xAxiesVal = []
 
-        for j in range(int(num)):
-            for i in np.linspace(1, -1, repPerPlace):
-                yAxiesVal.extend(elevation + (function(amp) * i * np.power(-1, j))
-                                 if oscillation else elevation + (function(amp) * i))
-                xAxiesVal.extend(np.arange(start, start + 1, 1/100))
-            start += step
+            for j in range(int(num)):
+                for i in np.linspace(1, -1, repPerPlace):
+                    yAxiesVal.extend(elevation + (function(amp) * i * np.power(-1, j))
+                                     if oscillation else elevation + (function(amp) * i))
+                    xAxiesVal.extend(np.arange(start, start + 1, 1/100))
+                start += step
 
-        return [xAxiesVal, yAxiesVal]
+            return [xAxiesVal, yAxiesVal]
+        except Exception as e:
+            print(e)
 
     def plot_Rf(self, start, amp, num=1):
-        xAxiesVal, yAxiesVal = self.prebGraphData(
-            start, amp, num, half_sin_wave, elevation=10, oscillation=True)
-        self.RFplotter.setData(xAxiesVal, yAxiesVal)
+        try:
+            xAxiesVal, yAxiesVal = self.prebGraphData(
+                start, amp, num, half_sin_wave, elevation=10, oscillation=True)
+            self.RFplotter.setData(xAxiesVal, yAxiesVal)
 
-        self.starting_TR_postion = xAxiesVal[50]
-        self.startingTR_plotter.setData(
-            np.repeat(self.starting_TR_postion, 50), np.linspace(0, 12.5, 50))
+            self.starting_TR_postion = xAxiesVal[50]
+            self.startingTR_plotter.setData(
+                np.repeat(self.starting_TR_postion, 50), np.linspace(0, 12.5, 50))
+        except Exception as e:
+            print(e)
 
     def plot_Gss(self, start, amp, num=1):
-        xAxiesVal, yAxiesVal = self.prebGraphData(
-            start, amp, num, square_wave, elevation=7.5, step=1)
-        self.GSSplotter.setData(xAxiesVal, yAxiesVal)
+        try:
+            xAxiesVal, yAxiesVal = self.prebGraphData(
+                start, amp, num, square_wave, elevation=7.5, step=1)
+            self.GSSplotter.setData(xAxiesVal, yAxiesVal)
+        except Exception as e:
+            print(e)
 
     def plot_Gpe(self, start, amp, num=1):
-        xAxiesVal, yAxiesVal = self.prebGraphData(
-            start, amp, num, square_wave, repPerPlace=5, elevation=5, step=2)
-        self.GPEplotter.setData(xAxiesVal, yAxiesVal)
+        try:
+            xAxiesVal, yAxiesVal = self.prebGraphData(
+                start, amp, num, square_wave, repPerPlace=5, elevation=5, step=2)
+            self.GPEplotter.setData(xAxiesVal, yAxiesVal)
+        except Exception as e:
+            print(e)
 
     def plot_Gfe(self, start, amp, num=1):
-        xAxiesVal, yAxiesVal = self.prebGraphData(
-            start, amp, num, square_wave, elevation=2.5, step=1)
-        self.GFEplotter.setData(xAxiesVal, yAxiesVal)
+        try:
+            xAxiesVal, yAxiesVal = self.prebGraphData(
+                start, amp, num, square_wave, elevation=2.5, step=1)
+            self.GFEplotter.setData(xAxiesVal, yAxiesVal)
+        except Exception as e:
+            print(e)
 
     def plot_RO(self, start, amp, num=1):
-        xAxiesVal, yAxiesVal = self.prebGraphData(
-            start, amp, num, half_sin_wave)
-        self.ROplotter.setData(xAxiesVal, yAxiesVal)
+        try:
+            xAxiesVal, yAxiesVal = self.prebGraphData(
+                start, amp, num, half_sin_wave)
+            self.ROplotter.setData(xAxiesVal, yAxiesVal)
 
-        self.TE_postion = xAxiesVal[50]
-        self.TE_plotter.setData(np.repeat(self.TE_postion, 50),
-                                np.linspace(0, 12.5, 50))
-        self.TE_horizontal_title.setData(np.linspace(self.starting_TR_postion, self.TE_postion, 50),
-                                         np.repeat(1.8, 50))
-        text = pg.TextItem(
-            text=f"TE= {np.round(self.TE_postion - self.starting_TR_postion,2)} s", anchor=(0, 0))
-        text.setPos(self.starting_TR_postion, 1.8)
-        self.ui.signalPlot.addItem(text)
+            self.TE_postion = xAxiesVal[50]
+            self.TE_plotter.setData(np.repeat(self.TE_postion, 50),
+                                    np.linspace(0, 12.5, 50))
+            self.TE_horizontal_title.setData(np.linspace(self.starting_TR_postion, self.TE_postion, 50),
+                                             np.repeat(1.8, 50))
+            text = pg.TextItem(
+                text=f"TE= {np.round(self.TE_postion - self.starting_TR_postion,2)} s", anchor=(0, 0))
+            text.setPos(self.starting_TR_postion, 1.8)
+            self.ui.signalPlot.addItem(text)
+        except Exception as e:
+            print(e)
 
 
 if __name__ == '__main__':

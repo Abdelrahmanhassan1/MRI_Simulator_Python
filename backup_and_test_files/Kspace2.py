@@ -1,74 +1,47 @@
-# import numpy as np
-
-# image = [[100, 0, 20, 30], [100, 0, 20, 30],
-#          [100, 0, 20, 30], [100, 0, 20, 30]]
-
-# # vector 3x1
-# Mo = [[0], [0], [100]]
-
-# # 90 degree rotation matrix
-# R = [[0, 1, 0], [-1, 0, 0], [0, 0, 1]]
-
-# # 36 degree rotation matrix
-# R2 = [[np.cos(np.pi/5), np.sin(np.pi/5), 0],
-#       [-np.sin(np.pi/5), np.cos(np.pi/5), 0],
-#       [0, 0, 1]]
-
-# # 40 degree rotation matrix
-# R3 = [[np.cos(np.pi/9), np.sin(np.pi/9), 0],
-#       [-np.sin(np.pi/9), np.cos(np.pi/9), 0],
-#       [0, 0, 1]]
-
-# x1 = np.matmul(R, Mo)
-# x2 = np.matmul(R2, x1)
-# x3 = np.matmul(R3, x2)
-
-# print(x1)
-# print(x2)
-# print(x3)
-
 import numpy as np
-image = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
-image2 = {}
+import matplotlib
+import matplotlib as mpl
+import matplotlib.pyplot as plt
 
-rows, columns = image.shape
-print(rows, columns)
-# Define the vector you want to flip as a NumPy array
-Mo = []
-k_space = image.copy()
+vegetables = ["cucumber", "tomato", "lettuce", "asparagus"]
+farmers = ["Farmer Joe", "Upland Bros.", "Smith Gardening",
+           "Agrifun"]
 
-sum = 0
-for i, phase in zip(range(rows), range(0, 360-36, 36)):
-    for j in range(columns):
-        print(f" i = {i}, phase ={phase}, j = {j}\n\n")
-        Mo = [0, 0, image[i, j]]
-        # flipping each pixel in the matrix by angle 90 degrees
-        theta = np.pi/2  # angle in radians
-        R = np.array([[1, 0, 0],
-                      [0, np.cos(theta), -np.sin(theta)],
-                      [0, np.sin(theta), np.cos(theta)]])
-        # Multiply the vector v by the rotation matrix R to get the flipped vector v_flipped
-        Mo_flipped_xy_plane = np.round(np.dot(R, Mo), 2)
+harvest = np.array([[0.8, 0.3, 0.25, 0.5],
+                    [0.75, 0.6, 0.2, 0.4],
+                    [1.0, 0.95, 0.3, 0.35],
+                    [0.2, 0.3, 0.4, 0.1]])
 
-        # applying Gy gradient with phase = 36 degrees
-        theta = phase * np.pi/180  # angle in radians
-        R2 = np.array([[np.cos(theta), np.sin(theta), 0],
-                       [-np.sin(theta), np.cos(theta), 0],
-                       [0, 0, 1]])
-        Mxy = np.round(np.dot(R2, Mo_flipped_xy_plane), 2)
-        image2[str(i)+str(j)] = Mxy
 
-for j, phase2 in zip(range(columns), range(0, 360-36, 36)):
-    for i in range(rows):
-        # applying Gx gradient with phase = 36 degrees
-        theta = phase * np.pi/180  # angle in radians
-        R3 = np.array([[np.cos(theta), np.sin(theta), 0],
-                       [-np.sin(theta), np.cos(theta), 0],
-                       [0, 0, 1]])
-        Mxy = np.round(np.dot(R3, image2[str(i)+str(j)]), 2)
+# [45.254834, 0., 0., 0.],
+# [32., 0., 0., 0.],
+# [45.254834, 0., 0., 0.]
 
-        # get the magnitude of the vector
-        M = np.sqrt(Mxy[0]**2 + Mxy[1]**2 + Mxy[2]**2)
-        k_space[i, j] = M
+harvest = np.array([[136., 11.3137085, 8., 11.3137085],
+                    [0, 0, 0, 0],
+                    [0, 0, 0, 0],
+                    [0, 0, 0, 0]])
+for i in range(4):
 
-print(k_space)
+    fig, ax = plt.subplots()
+    im = ax.imshow(harvest)
+
+    # Show all ticks and label them with the respective list entries
+    ax.set_xticks(np.arange(len(farmers)), labels=farmers)
+    ax.set_yticks(np.arange(len(vegetables)), labels=vegetables)
+    ax.xaxis.tick_top()
+
+    # Loop over data dimensions and create text annotations.
+    for i in range(len(vegetables)):
+        for j in range(len(farmers)):
+            text = ax.text(j, i, harvest[i, j],
+                           ha="center", va="center", color="w")
+
+    ax.set_title("Harvest of local farmers (in tons/year)")
+    fig.tight_layout()
+    plt.show()
+
+    harvest[1, 0] = 45.254834
+    harvest[1, 1] = 0
+    harvest[1, 2] = 0
+    harvest[1, 3] = 0

@@ -6,12 +6,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import cv2
 # construct 4x4 image
-# image = np.array([[1, 2, 3, 4],
-#                   [5, 6, 7, 8],
-#                   [9, 10, 11, 12],
-#                   [13, 14, 15, 16]])
+image = np.array([[1, 2, 3, 4],
+                  [5, 6, 7, 8],
+                  [9, 10, 11, 12],
+                  [13, 14, 15, 16]])
 
-image = cv2.imread('../images/shepp_logan_phantom/128px-Shepp_logan.png')
+# image = cv2.imread('../images/shepp_logan_phantom/128px-Shepp_logan.png')
 # print(f"image shape: {image.shape}")
 # convert the image to numpy array
 # image = np.array(image)
@@ -150,7 +150,7 @@ def apply_sequence(image_after_rf_pulse):
 
     # print("=============================================")
     print(f"k_space 2d \n", k_space_2d)
-    # print(f"k_space \n", k_space)
+    print(f"k_space \n", k_space)
 
     # plt.rcParams["figure.figsize"] = [7.00, 3.50]
 
