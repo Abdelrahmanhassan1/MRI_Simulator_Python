@@ -29,6 +29,11 @@ class MainWindow(QtWidgets.QMainWindow):
         super(MainWindow, self).__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+        ##to control brightness of phantom
+        self.setMouseTracking(True)
+        self.dragging = False
+        self.prev_pos = None
+        self.brightness_factor = 0
 
         # phantom image
         self.prev_x = 0
@@ -108,9 +113,60 @@ class MainWindow(QtWidgets.QMainWindow):
                 img = QImage(image, image.shape[1], image.shape[0],
                              image.strides[0], QImage.Format_Grayscale8)
             pixmap = QPixmap.fromImage(img)
+            ## as it will use in control brightness
+            self.image = pixmap.toImage()
+            width = self.image.width()
+            height = self.image.height()
+            buffer = self.image.bits().asstring(width * height * 4)
+            img = np.frombuffer(buffer, dtype=np.uint8).reshape((height, width, 4))
+            img = cv2.cvtColor(img, cv2.COLOR_RGBA2RGB)
+            img_hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
+            self.value = img_hsv[:, :, 2]
+            self.img_hsv_manipulated = img_hsv.copy()
+            ##end of control brightness
             self.ui.phantom_image_label.setPixmap(pixmap)
         except Exception as e:
             print(e)
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self.dragging = True
+            self.prev_pos = event.pos()
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self.dragging = False
+            self.prev_pos = None
+
+    def mouseMoveEvent(self, event):
+        if self.dragging:
+            delta = event.pos() - self.prev_pos
+            print(f"event.pos() = {event.pos().x()} , {event.pos().y()}")
+            print(f"self.prev_pos = {self.prev_pos.x()} , {self.prev_pos.y()}")
+            print(f"delta = {delta.x()} , {delta.y()}")
+            # self.brightness_factor += delta.y() / 100.0
+            self.prev_pos = event.pos()
+            if ((delta.x() > 0) and (delta.y() == 0) and (self.brightness_factor <250)):
+                self.brightness_factor += 2
+                print(f"self.brightness_factor = {self.brightness_factor}")
+                self.update_brightness()
+            elif ((delta.x() < 0) and (delta.y() == 0)and (self.brightness_factor >-250)):
+                self.brightness_factor += -2
+                print(f"self.brightness_factor = {self.brightness_factor}")
+                self.update_brightness()
+
+    def update_brightness(self):
+        print(f"self.dragging = {self.dragging}")
+
+        value_manipulated = cv2.add(self.value, self.brightness_factor)
+        print(f"value = {value_manipulated}")
+        self.img_hsv_manipulated[:, :, 2] = value_manipulated
+        img_rgb = cv2.cvtColor(self.img_hsv_manipulated, cv2.COLOR_HSV2RGB)
+        qimage = QImage(img_rgb.data, img_rgb.shape[1], img_rgb.shape[0], QImage.Format_RGB888)
+
+        new_pixmap = QPixmap.fromImage(qimage)
+
+        self.ui.phantom_image_label.setPixmap(new_pixmap)
 
     def handle_wheel_event(self, event):
         try:
