@@ -16,8 +16,8 @@ image = np.array([[1, 2, 3, 4],
 # convert the image to numpy array
 # image = np.array(image)
 
-# plt.imshow(image, cmap='gray')
-# plt.show()
+plt.imshow(image, cmap='gray')
+plt.show()
 a_fft = np.fft.fft2(image)
 
 # print the result

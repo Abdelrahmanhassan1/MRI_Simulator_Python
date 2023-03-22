@@ -2,8 +2,9 @@ from collections import Counter
 import json
 import math
 import time
+from PyQt5.QtWidgets import QMessageBox
 from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtGui import QPixmap, QImage, QColor, QPainter, QPen, QBrush
+from PyQt5.QtGui import QPixmap, QImage, QColor, QPainter, QPen, QBrush, QIntValidator
 from PyQt5.QtCore import Qt, QRect
 import cv2
 import sys
@@ -49,9 +50,12 @@ class MainWindow(QtWidgets.QMainWindow):
             self.reconstructed_image_figure)
         self.ui.verticalLayout_12.addWidget(self.reconstructed_image_canvas)
 
+        self.ui.lineEdit.setValidator(QIntValidator())
+
         # phantom image
         self.prev_x = 0
         self.prev_y = 0
+        self.new_3D_matrix_image = None
         self.scroll_flag = False
         self.phantom_image_resized = cv2.imread(
             "./images/phantom_modified/16x16.png", 0)
@@ -100,15 +104,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # RF and Gradient
         self.ui.pushButton.released.connect(
-            lambda: self.apply_rf_pulse(self.phantom_image_resized, 90))
+            lambda: self.apply_rf_pulse(self.phantom_image_resized, self.ui.lineEdit.text()))
         self.ui.pushButton_2.released.connect(
             lambda: self.apply_gradient(self.new_3D_matrix_image))
 
         self.read_dial_values_and_calculate_ernst()
-        self.ui.dial.valueChanged.connect(
-            self.read_dial_values_and_calculate_ernst)
-        self.ui.dial_2.valueChanged.connect(
-            self.read_dial_values_and_calculate_ernst)
+        for dial in [self.ui.dial, self.ui.dial_2, self.ui.dial_3]:
+            dial.valueChanged.connect(
+                self.read_dial_values_and_calculate_ernst)
 
     @QtCore.pyqtSlot()
     def show_image_on_label(self, image_path, image=None):
@@ -358,17 +361,30 @@ class MainWindow(QtWidgets.QMainWindow):
     def read_dial_values_and_calculate_ernst(self):
         try:
             tr_value = int(self.ui.dial.value())
+            te_value = int(self.ui.dial_3.value())
             t1_value = int(self.ui.dial_2.value())
+
             ernst_angle = int(np.arccos(
                 math.exp(-tr_value/t1_value)) * (180.0 / math.pi))
-            self.ui.label_8.setText(str(self.ui.dial.value()))
-            self.ui.label_9.setText(str(self.ui.dial_2.value()))
+
+            self.ui.label_8.setText(str(tr_value))
+            self.ui.label_9.setText(str(t1_value))
             self.ui.label_13.setText(str(ernst_angle))
+            self.ui.label_18.setText(str(te_value))
         except Exception as e:
             print(e)
 
     def apply_rf_pulse(self, image, flip_angle):
         try:
+            if self.ui.comboBox_2.currentIndex() == 0:
+                self.popUpErrorMsg("Error", 'Please select a phantom size')
+                return
+
+            if flip_angle == '':
+                self.popUpErrorMsg("Error", 'Please enter a flip angle value')
+                return
+
+            flip_angle = int(flip_angle)
             rows, columns = image.shape
             # make a rotation matrix with 90 along x-axis
             theta = flip_angle * np.pi/180  # angle in radians
@@ -389,20 +405,34 @@ class MainWindow(QtWidgets.QMainWindow):
                     Mo_flipped_xy_plane = np.round(
                         np.dot(rotation_matrix_in_y, Mo), 2)
                     self.new_3D_matrix_image[i, j] = Mo_flipped_xy_plane
+
         except Exception as e:
             print(e)
 
     def apply_gradient(self, image_after_rf_pulse):
         try:
+            if image_after_rf_pulse is None:
+                self.popUpErrorMsg("Error", 'Please apply RF pulse first')
+                return
             backup_image = image_after_rf_pulse.copy()
             rows, columns, _ = image_after_rf_pulse.shape
             k_space_2d = np.zeros((rows, columns), dtype=complex)
             k_space = np.zeros((rows, columns))
             phases = np.zeros((rows, columns))
 
+            # start the progress bar
+            self.ui.progressBar.setValue(0)
+            total_steps = len(self.gy_phases) * len(self.gx_phases)
+
+            step_count = 0
+
             for row_index, gy_phase in enumerate(self.gy_phases):
                 for column_index, gx_phase in enumerate(self.gx_phases):
                     image_after_rf_pulse = backup_image.copy()
+                    # Update progress bar
+                    step_count += 1
+                    progress_percent = int(step_count / total_steps * 100)
+                    self.ui.progressBar.setValue(progress_percent)
                     for i in range(rows):
                         for j in range(columns):
                             pixel_value = image_after_rf_pulse[i, j, 0]
@@ -420,11 +450,12 @@ class MainWindow(QtWidgets.QMainWindow):
                     k_space_2d[row_index][column_index] = np.round(
                         sum[0], 2) - 1j * np.round(sum[1], 2)
 
-                    k_space[row_index, column_index] = np.sqrt(
-                        sum[0]**2 + sum[1]**2)
+                    k_space[row_index, column_index] = np.round(np.sqrt(
+                        sum[0]**2 + sum[1]**2), 2)
 
                     self.update_kspace(k_space)
                     self.update_image(k_space_2d)
+
         except Exception as e:
             print(e)
 
@@ -432,12 +463,12 @@ class MainWindow(QtWidgets.QMainWindow):
         try:
             self.kspace_figure.clear()
             axes = self.kspace_figure.gca()
-            axes.set_facecolor((1, 1, 1))
             axes.set_xticks([])
             axes.set_yticks([])
+            axes.xaxis.tick_top()
             axes.xaxis.set_label_text('Kx')
             axes.yaxis.set_label_text('Ky')
-            axes.xaxis.tick_top()
+            axes.xaxis.set_label_position('top')
 
             axes.imshow(kspace, cmap='gray')
 
@@ -450,11 +481,7 @@ class MainWindow(QtWidgets.QMainWindow):
         try:
             self.reconstructed_image_figure.clear()
             axes = self.reconstructed_image_figure.gca()
-            axes.set_facecolor((1, 1, 1))
-            axes.xaxis.set_label_text('Kx')
-            axes.yaxis.set_label_text('Ky')
-            axes.xaxis.tick_top()
-            axes.set_xticks([])
+
             axes.set_yticks([])
 
             img = np.fft.ifft2(kspace_2d)
@@ -465,6 +492,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.reconstructed_image_figure.canvas.flush_events()
         except Exception as e:
             print(e)
+
     # sequence plotting
 
     def browseFile(self):
@@ -556,6 +584,17 @@ class MainWindow(QtWidgets.QMainWindow):
                 text=f"TE= {np.round(self.TE_postion - self.starting_TR_postion,2)} s", anchor=(0, 0))
             text.setPos(self.starting_TR_postion, 1.8)
             self.ui.signalPlot.addItem(text)
+        except Exception as e:
+            print(e)
+
+    # assistive functions:
+    def popUpErrorMsg(self, title, body):
+        try:
+            msgBox = QMessageBox()
+            msgBox.setWindowTitle(title)
+            msgBox.setText(body)
+            msgBox.setIcon(msgBox.Critical)
+            msgBox.exec_()
         except Exception as e:
             print(e)
 
