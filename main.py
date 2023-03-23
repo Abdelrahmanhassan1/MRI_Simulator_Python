@@ -585,7 +585,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def plot_Rf(self, start, amp, num=1):
         try:
             xAxiesVal, yAxiesVal = self.prebGraphData(
-                start, amp, num, half_sin_wave, elevation=10, oscillation=True)
+                start, amp, num, half_sin_wave, elevation=10, step=5)
             self.RFplotter.setData(xAxiesVal, yAxiesVal)
 
             self.starting_TR_postion = xAxiesVal[50]
@@ -629,10 +629,14 @@ class MainWindow(QtWidgets.QMainWindow):
                                     np.linspace(0, 12.5, 50))
             self.TE_horizontal_title.setData(np.linspace(self.starting_TR_postion, self.TE_postion, 50),
                                              np.repeat(1.8, 50))
-            text = pg.TextItem(
+            
+            if hasattr(self, 'text'):
+                self.ui.signalPlot.removeItem(self.text)
+            self.text = pg.TextItem(
                 text=f"TE= {np.round(self.TE_postion - self.starting_TR_postion,2)} s", anchor=(0, 0))
-            text.setPos(self.starting_TR_postion, 1.8)
-            self.ui.signalPlot.addItem(text)
+            self.text.setPos(self.starting_TR_postion, 1.8)
+            self.ui.signalPlot.addItem(self.text)
+
         except Exception as e:
             print(e)
 
