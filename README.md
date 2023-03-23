@@ -5,7 +5,7 @@
 |          Name          | Sec | B.N |
 | :--------------------: | :-: | :-: |
 |   Abdelrahman Hassan   |  1  | 50  |
-| Hesham Gamal Abdelhady |  2  |     |
+| Hesham Gamal Abdelhady |  2  |  47 |
 |     Muhammed Magdy     |  2  |     |
 |   Abdelrahman Ashraf   |  1  | 48  |
 
