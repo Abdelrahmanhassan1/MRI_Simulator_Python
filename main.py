@@ -67,7 +67,10 @@ class MainWindow(QtWidgets.QMainWindow):
             self.handle_image_features_combo_box)
         self.modify_the_image_intensities_distribution(self.image_path)
         self.show_image_on_label(self.image_path)
+        self.ui.phantom_image_label.mousePressEvent = self.mousePressEvent
+        self.ui.phantom_image_label.mouseReleaseEvent = self.mouseReleaseEvent
         self.ui.phantom_image_label.mousePressEvent = self.handle_mouse_press
+        self.ui.phantom_image_label.mouseMoveEvent = self.mouseMoveEvent
         self.brightness = 0
         self.ui.phantom_image_label.wheelEvent = self.handle_wheel_event
 
@@ -166,36 +169,33 @@ class MainWindow(QtWidgets.QMainWindow):
         try:
             if self.dragging:
                 delta = event.pos() - self.prev_pos
-                # print(f"event.pos() = {event.pos().x()} , {event.pos().y()}")
-                # print(f"self.prev_pos = {self.prev_pos.x()} , {self.prev_pos.y()}")
-                # print(f"delta = {delta.x()} , {delta.y()}")
-                # self.brightness_factor += delta.y() / 100.0
                 self.prev_pos = event.pos()
-                if ((delta.x() > 0) and (delta.y() == 0) and (self.brightness_factor < 250)):
-                    self.brightness_factor += 2
-                    # print(f"self.brightness_factor = {self.brightness_factor}")
-                    self.update_brightness()
-                elif ((delta.x() < 0) and (delta.y() == 0) and (self.brightness_factor > -250)):
-                    self.brightness_factor += -2
-                    # print(f"self.brightness_factor = {self.brightness_factor}")
-                    self.update_brightness()
-        except Exception as e:
-            print(e)
 
-    def update_brightness(self):
-        try:
-            # print(f"self.dragging = {self.dragging}")
+                orig_image = self.original_phantom_image.copy().astype(np.int32)
 
-            value_manipulated = cv2.add(self.value, self.brightness_factor)
-            # print(f"value = {value_manipulated}")
-            self.img_hsv_manipulated[:, :, 2] = value_manipulated
-            img_rgb = cv2.cvtColor(self.img_hsv_manipulated, cv2.COLOR_HSV2RGB)
-            qimage = QImage(
-                img_rgb.data, img_rgb.shape[1], img_rgb.shape[0], QImage.Format_RGB888)
+                if ((delta.x() > 0) and (delta.y() == 0)):
+                    self.brightness += 10
+                elif ((delta.x() < 0) and (delta.y() == 0)):
+                    self.brightness -= 10
 
-            new_pixmap = QPixmap.fromImage(qimage)
+                self.img_enhanced = orig_image + self.brightness
 
-            self.ui.phantom_image_label.setPixmap(new_pixmap)
+                # find the values that are greater than 255 and set them to 255
+                self.img_enhanced[self.img_enhanced > 255] = 255
+                self.img_enhanced[self.img_enhanced < 0] = 0
+                self.img_enhanced = self.img_enhanced.astype(np.uint8)
+
+                # get the unique values
+                self.most_frequent = np.unique(
+                    self.img_enhanced, return_counts=False)
+
+                np.savetxt('./txt_files/most_frequent.txt',
+                           np.sort(self.most_frequent), fmt='%d')
+
+                qImage = QImage(self.img_enhanced, self.img_enhanced.shape[1], self.img_enhanced.shape[0],
+                                self.img_enhanced.strides[0], QImage.Format_Grayscale8)
+                pixmap = QPixmap.fromImage(qImage)
+                self.ui.phantom_image_label.setPixmap(pixmap)
         except Exception as e:
             print(e)
 
@@ -232,41 +232,45 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def handle_mouse_press(self, event):
         try:
-            if self.ui.comboBox.currentText() == 'Show Phantom Image':
-                if self.scroll_flag:
-                    self.show_image_on_label(
-                        None, self.img_enhanced)
+            if not self.dragging:
+                print('mouse press')
+                if self.ui.comboBox.currentText() == 'Show Phantom Image':
+                    self.dragging = True
+                    self.prev_pos = event.pos()
+                    if self.scroll_flag:
+                        self.show_image_on_label(
+                            None, self.img_enhanced)
+                    else:
+                        self.show_image_on_label(self.image_path)
+
+                    x = event.pos().x()
+                    y = event.pos().y()
+                    # Get the color of the pixel at the clicked position
+                    pixmap = self.ui.phantom_image_label.pixmap()
+                    if pixmap is not None:
+                        pixel_color = pixmap.toImage().pixel(x, y)
+                        intensity = QColor(pixel_color).getRgb()[0]
+
+                        index = np.where(
+                            self.most_frequent == intensity)[0][0]
+                        t1 = self.t1Weight[index]
+                        t2 = self.t2Weight[index]
+                        pd = self.PDWeight[index]
+                        self.ui.label_4.setText(str(t1))
+                        self.ui.label_5.setText(str(t2))
+                        self.ui.label_6.setText(str(pd))
+
+                        # Remove the previous rectangle, if any
+                        painter = QPainter(pixmap)
+                        # Draw a rectangle around the selected pixel
+                        painter.setPen(QPen(QtCore.Qt.red))
+                        painter.setBrush(QBrush(QtCore.Qt.NoBrush))
+                        # Save the new rectangle
+                        self.rect = QRect(x-5, y-5, 10, 10)
+                        painter.drawRect(self.rect)  # Draw the new rectangle
+                        self.ui.phantom_image_label.setPixmap(pixmap)
                 else:
-                    self.show_image_on_label(self.image_path)
-
-                x = event.pos().x()
-                y = event.pos().y()
-                # Get the color of the pixel at the clicked position
-                pixmap = self.ui.phantom_image_label.pixmap()
-                if pixmap is not None:
-                    pixel_color = pixmap.toImage().pixel(x, y)
-                    intensity = QColor(pixel_color).getRgb()[0]
-
-                    index = np.where(
-                        self.most_frequent == intensity)[0][0]
-                    t1 = self.t1Weight[index]
-                    t2 = self.t2Weight[index]
-                    pd = self.PDWeight[index]
-                    self.ui.label_4.setText(str(t1))
-                    self.ui.label_5.setText(str(t2))
-                    self.ui.label_6.setText(str(pd))
-
-                    # Remove the previous rectangle, if any
-                    painter = QPainter(pixmap)
-                    # Draw a rectangle around the selected pixel
-                    painter.setPen(QPen(QtCore.Qt.red))
-                    painter.setBrush(QBrush(QtCore.Qt.NoBrush))
-                    # Save the new rectangle
-                    self.rect = QRect(x-5, y-5, 10, 10)
-                    painter.drawRect(self.rect)  # Draw the new rectangle
-                    self.ui.phantom_image_label.setPixmap(pixmap)
-            else:
-                print("Please select the phantom image first")
+                    print("Please select the phantom image first")
         except Exception as e:
             print(e)
 
