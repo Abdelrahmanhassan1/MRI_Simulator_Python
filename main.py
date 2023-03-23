@@ -167,6 +167,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def mouseMoveEvent(self, event):
         try:
+            self.scroll_flag = True
             if self.dragging:
                 delta = event.pos() - self.prev_pos
                 self.prev_pos = event.pos()
@@ -233,7 +234,6 @@ class MainWindow(QtWidgets.QMainWindow):
     def handle_mouse_press(self, event):
         try:
             if not self.dragging:
-                print('mouse press')
                 if self.ui.comboBox.currentText() == 'Show Phantom Image':
                     self.dragging = True
                     self.prev_pos = event.pos()
