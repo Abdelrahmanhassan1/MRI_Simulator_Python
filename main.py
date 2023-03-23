@@ -96,7 +96,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.startingTR_plotter = self.ui.signalPlot.plot(
             [], [], pen=self.whitePen)
         self.TE_plotter = self.ui.signalPlot.plot([], [], pen=self.whitePen)
-        self.TE_horizontal_title = self.ui.signalPlot.plot(
+        self.TE_horizontal_line = self.ui.signalPlot.plot(
+            [], [], pen=self.whitePen)
+        self.endingTR_plotter = self.ui.signalPlot.plot(
+            [], [], pen=self.whitePen)
+        self.TR_horizontal_line = self.ui.signalPlot.plot(
             [], [], pen=self.whitePen)
 
         self.ui.browseFileBtn.released.connect(self.browseFile)
@@ -116,7 +120,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.horizontalSlider.valueChanged.connect(self.apply_noise)
         self.ui.pushButton_3.released.connect(self.reset_phantom_to_original)
 
-    @QtCore.pyqtSlot()
+    @ QtCore.pyqtSlot()
     def show_image_on_label(self, image_path, image=None):
         try:
             if image_path is not None:
@@ -590,7 +594,25 @@ class MainWindow(QtWidgets.QMainWindow):
 
             self.starting_TR_postion = xAxiesVal[50]
             self.startingTR_plotter.setData(
-                np.repeat(self.starting_TR_postion, 50), np.linspace(0, 12.5, 50))
+                np.repeat(self.starting_TR_postion, 50), np.linspace(0, 11.5, 50))
+
+            self.ending_TR_postion = xAxiesVal[-50]
+            self.endingTR_plotter.setData(
+                np.repeat(self.ending_TR_postion, 50), np.linspace(10, 11.5, 50))
+            self.TR_horizontal_line.setData(np.linspace(
+                self.starting_TR_postion, self.ending_TR_postion, 50), np.repeat(11, 50))
+
+            if hasattr(self, 'TR_text'):
+                self.ui.signalPlot.removeItem(self.TR_text)
+
+            center = (self.starting_TR_postion + self.ending_TR_postion)
+
+            self.TR_text = pg.TextItem(
+                text=f"TR= {np.round(center,2)} ms", anchor=(0, 0))
+
+            self.TR_text.setPos(self.starting_TR_postion + center / 5, 11)
+            self.ui.signalPlot.addItem(self.TR_text)
+
         except Exception as e:
             print(e)
 
@@ -626,16 +648,20 @@ class MainWindow(QtWidgets.QMainWindow):
 
             self.TE_postion = xAxiesVal[50]
             self.TE_plotter.setData(np.repeat(self.TE_postion, 50),
-                                    np.linspace(0, 12.5, 50))
-            self.TE_horizontal_title.setData(np.linspace(self.starting_TR_postion, self.TE_postion, 50),
-                                             np.repeat(1.8, 50))
-            
-            if hasattr(self, 'text'):
-                self.ui.signalPlot.removeItem(self.text)
-            self.text = pg.TextItem(
-                text=f"TE= {np.round(self.TE_postion - self.starting_TR_postion,2)} s", anchor=(0, 0))
-            self.text.setPos(self.starting_TR_postion, 1.8)
-            self.ui.signalPlot.addItem(self.text)
+                                    np.linspace(0, 2.2, 50))
+            self.TE_horizontal_line.setData(np.linspace(self.starting_TR_postion, self.TE_postion, 50),
+                                            np.repeat(1.8, 50))
+
+            if hasattr(self, 'TE_text'):
+                self.ui.signalPlot.removeItem(self.TE_text)
+
+            center = (self.TE_postion - self.starting_TR_postion)
+
+            self.TE_text = pg.TextItem(
+                text=f"TE= {np.round(center,2)} ms", anchor=(0, 0))
+
+            self.TE_text.setPos(self.starting_TR_postion + 0.2, 1.8)
+            self.ui.signalPlot.addItem(self.TE_text)
 
         except Exception as e:
             print(e)
