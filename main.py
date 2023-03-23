@@ -60,7 +60,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.phantom_image_resized = cv2.imread(
             "./images/phantom_modified/16x16.png", 0)
 
-        self.image_path = './images/phantom_modified/300px-Shepp_logan.png'
+        self.image_path = './images/phantom_modified/480px-Shepp_logan.png'
         self.ui.comboBox_2.currentIndexChanged.connect(
             self.change_phantom_size)
         self.ui.comboBox.currentIndexChanged.connect(

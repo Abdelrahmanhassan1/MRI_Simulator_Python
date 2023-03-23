@@ -11,13 +11,14 @@ image = np.array([[1, 2, 3, 4],
                   [9, 10, 11, 12],
                   [13, 14, 15, 16]])
 
+
 # image = cv2.imread('../images/shepp_logan_phantom/128px-Shepp_logan.png')
 # print(f"image shape: {image.shape}")
 # convert the image to numpy array
 # image = np.array(image)
 
-plt.imshow(image, cmap='gray')
-plt.show()
+# plt.imshow(image, cmap='gray')
+# plt.show()
 a_fft = np.fft.fft2(image)
 
 # print the result
@@ -96,82 +97,155 @@ def update_image(kspace_2d):
 
 
 def apply_sequence(image_after_rf_pulse):
-    backup_image = image_after_rf_pulse.copy()
     rows, columns, _ = image_after_rf_pulse.shape
+    image_after_rf_pulse = image_after_rf_pulse.reshape(rows * columns, 3)
+    # print(image_after_rf_pulse)
+    new_image_after_rf_pulse = image_after_rf_pulse.copy()
     k_space_2d = np.zeros((rows, columns), dtype=complex)
     k_space = np.ones((rows, columns))
-    phases = np.zeros((rows, columns))
+    phases = np.empty((rows, columns))
     gx_phases = np.arange(0, 360, 360 / rows)
     gy_phases = np.arange(0, 360, 360 / rows)
 
-    # gy_phases = [30]
-    # gx_phases = [0, 90, 120]
-
     for row_index, gy_phase in enumerate(gy_phases):
+        phases = gy_phase * \
+            np.arange(rows).reshape(-1, 1) + np.zeros((rows, columns))
+
+        phases_backup = phases.copy()
         for column_index, gx_phase in enumerate(gx_phases):
-            image_after_rf_pulse = backup_image.copy()
-            for i in range(rows):
-                for j in range(columns):
-                    pixel_value = image_after_rf_pulse[i, j, 0]
-                    # print(
-                    #     f"at row index {gy_phase} and column index {gx_phase} pixel value is {pixel_value} ")
-                    phase_from_gy = gy_phase * i
-                    phase_from_gx = gx_phase * j
-                    applied_phase = (phase_from_gx + phase_from_gy)
-                    phases[i, j] = applied_phase
-                    applied_phase *= np.pi/180
-                    # print(f"applied_phase", applied_phase)
-                    new_x_value = pixel_value * np.cos(applied_phase)
-                    new_y_value = pixel_value * np.sin(applied_phase)
-                    image_after_rf_pulse[i, j, 0] = new_x_value
-                    image_after_rf_pulse[i, j, 1] = new_y_value
-            # print(f"phases \n", phases)
-            # print(f"image_after_rf_pulse", image_after_rf_pulse)
-            # sum the image vectors
-            sum = np.round(np.sum(image_after_rf_pulse, axis=(0, 1)), 2)
-            # print(f"sum", sum)
-            # print(sum)
+            phases = phases_backup.copy()
+            phases += gx_phase * np.arange(columns)
 
-            # get the magnitude of the vector
-            # M = np.sqrt(sum[0]**2 + sum[1]**2)
-            # print(M)
-            # k_space[row_index, column_index] = M
-            k_space_2d[row_index][column_index] = np.round(
-                sum[0], 2) - 1j * np.round(sum[1], 2)
-            # magnitude of the vector
-            k_space[row_index, column_index] = np.sqrt(sum[0]**2 + sum[1]**2)
-            # print(f"k_space \n", k_space)
-            # update_kspace(k_space)
-    # update_image(k_space_2d)
-    img = np.fft.ifft2(k_space_2d)
-    img = np.real(img).astype(np.uint8)
-    plt.imshow(img, cmap='gray')
-    plt.show()
+            end_phases = phases.reshape(rows * columns, 1)
 
-    # print("=============================================")
-    print(f"k_space 2d \n", k_space_2d)
-    print(f"k_space \n", k_space)
+            for index, end_phase in enumerate(end_phases):
+                theta = end_phase * np.pi/180
 
-    # plt.rcParams["figure.figsize"] = [7.00, 3.50]
+                R = np.array([[np.cos(theta), np.sin(theta), 0],
+                              [-np.sin(theta), np.cos(theta), 0],
+                              [0, 0, 1]])
+                new_image_after_rf_pulse[index] = np.dot(
+                    R, image_after_rf_pulse[index].reshape(3, 1)).reshape(3)
 
-    # plt.rcParams["figure.autolayout"] = True
+            # print(image_after_rf_pulse)
+            sum_x = np.round(np.sum(new_image_after_rf_pulse[:, 0]))
+            sum_y = np.round(np.sum(new_image_after_rf_pulse[:, 1]))
 
-    # Plot the data using imshow with gray colormap
-    # plt.imshow(k_space, cmap='gray')
+            k_space_2d[row_index, column_index] = sum_x + 1j * sum_y
+            k_space[row_index, column_index] = np.sqrt(sum_x**2 + sum_y**2)
 
-    # # Display the plot
-    # plt.show()
+    # theta = end_phases * np.pi/180
+    # cos_theta = np.cos(theta)
+    # sin_theta = np.sin(theta)
 
-    # calculate inverse fourir to 2d k_space
+    # R = np.stack([cos_theta, -sin_theta, np.zeros_like(theta),
+    #               sin_theta, cos_theta, np.zeros_like(theta),
+    #               np.zeros_like(theta), np.zeros_like(theta), np.ones_like(theta)],
+    #              axis=-1)
 
-    # k_space_2d = np.fft.ifft2(k_space_2d)
-    # k_space_2d = k_space_2d.real
-    # print(f"inverse k_space_2d", k_space_2d)
-    # k_space = np.fft.fftshift(k_space)
-    # plt.imshow(k_space_2d, cmap='gray')
-    # plt.show()
+    # print(R.shape)
+
+    # print(R)
+    # R = R.reshape(rows, columns, 3, 3)
+
+    # image_after_rf_pulse = backup_image.copy()
+    # image_after_rf_pulse = np.einsum(
+    #     'ijkl,imk->imj', R, image_after_rf_pulse)
 
 
+# def apply_sequence(image_after_rf_pulse):
+#     rows, columns, _ = image_after_rf_pulse.shape
+#     backup_image = image_after_rf_pulse.copy()
+#     k_space_2d = np.zeros((rows, columns), dtype=complex)
+#     k_space = np.ones((rows, columns))
+#     gx_phases = np.arange(0, 360, 360 / rows)
+#     gy_phases = np.arange(0, 360, 360 / rows)
+
+#     for row_index, gy_phase in enumerate(gy_phases):
+#         phases = gy_phase * \
+#             np.arange(rows).reshape(-1, 1) + np.zeros((rows, columns))
+
+#         phases_backup = phases.copy()
+
+#         for column_index, gx_phase in enumerate(gx_phases):
+#             phases = phases_backup.copy()
+#             phases += gx_phase * np.arange(columns)
+
+#             endPhases = phases.reshape(rows * columns, 1)
+#             theta = endPhases * np.pi/180
+#             cos_theta = np.cos(theta)
+#             sin_theta = np.sin(theta)
+#             R = np.stack([cos_theta, -sin_theta, np.zeros_like(theta),
+#                           sin_theta, cos_theta, np.zeros_like(theta),
+#                           np.zeros_like(theta), np.zeros_like(theta), np.ones_like(theta)],
+#                          axis=-1)
+
+#             R = R.reshape(rows, columns, 3, 3)
+
+#             image_after_rf_pulse = image_after_rf_pulse.reshape(
+#                 rows, columns, 3)
+
+#             image_after_rf_pulse = np.einsum(
+#                 'ijkl, mkl -> ijm', R, image_after_rf_pulse)
+
+#         # Multiply the vector v by the rotation matrix R to get the flipped vector v_flipped
+
+#         #         applied_phase = (phase_from_gx + phase_from_gy)
+#         #         phases[i, j] = applied_phase
+#         #         applied_phase *= np.pi/180
+#         #         # print(f"applied_phase", applied_phase)
+#         #         new_x_value = pixel_value * np.cos(applied_phase)
+#         #         new_y_value = pixel_value * np.sin(applied_phase)
+#         #         image_after_rf_pulse[i, j, 0] = new_x_value
+#         #         image_after_rf_pulse[i, j, 1] = new_y_value
+#         #     # print(f"phases \n", phases)
+#         #     # print(f"image_after_rf_pulse", image_after_rf_pulse)
+#         #     # sum the image vectors
+#         #     sum = np.round(np.sum(image_after_rf_pulse, axis=(0, 1)), 2)
+#         #     # print(f"sum", sum)
+#         #     # print(sum)
+
+#         #     # get the magnitude of the vector
+#         #     # M = np.sqrt(sum[0]**2 + sum[1]**2)
+#         #     # print(M)
+#         #     # k_space[row_index, column_index] = M
+#         #     k_space_2d[row_index][column_index] = np.round(
+#         #         sum[0], 2) - 1j * np.round(sum[1], 2)
+#         #     # magnitude of the vector
+#         #     k_space[row_index, column_index] = np.sqrt(sum[0]**2 + sum[1]**2)
+#         #     # print(f"k_space \n", k_space)
+#         #     # update_kspace(k_space)
+#         # # update_image(k_space_2d)
+#         # img = np.fft.ifft2(k_space_2d)
+#         # img = np.real(img).astype(np.uint8)
+#         # plt.imshow(img, cmap='gray')
+#         # plt.show()
+
+#         # # print("=============================================")
+#         # print(f"k_space 2d \n", k_space_2d)
+#         # print(f"k_space \n", k_space)
+
+#         # plt.rcParams["figure.figsize"] = [7.00, 3.50]
+
+#         # plt.rcParams["figure.autolayout"] = True
+
+#         # Plot the data using imshow with gray colormap
+#         # plt.imshow(k_space, cmap='gray')
+
+#         # # Display the plot
+#         # plt.show()
+
+#         # calculate inverse fourir to 2d k_space
+
+#         # k_space_2d = np.fft.ifft2(k_space_2d)
+#         # k_space_2d = k_space_2d.real
+#         # print(f"inverse k_space_2d", k_space_2d)
+#         # k_space = np.fft.fftshift(k_space)
+#         # plt.imshow(k_space_2d, cmap='gray')
+#         # plt.show()
+
+# new_matrix = apply_rf_pulse(image, 90)
+# print(f"new_matrix", new_matrix.reshape(16, 3))
 apply_sequence(apply_rf_pulse(image, 90))
 
 # # make a rotation matrix with 90 along x-axis

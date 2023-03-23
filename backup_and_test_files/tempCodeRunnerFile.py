@@ -1,2 +1,1 @@
-, cmap='gray')
-plt.show()
+print(R)
