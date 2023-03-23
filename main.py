@@ -113,22 +113,24 @@ class MainWindow(QtWidgets.QMainWindow):
             dial.valueChanged.connect(
                 self.read_dial_values_and_calculate_ernst)
 
+        self.ui.horizontalSlider.valueChanged.connect(self.apply_noise)
+        self.ui.pushButton_3.released.connect(self.reset_phantom_to_original)
+
     @QtCore.pyqtSlot()
     def show_image_on_label(self, image_path, image=None):
         try:
-            self.original_phantom_image = cv2.imread(image_path, 0)
-            # modify the label size to fit the image
-            self.ui.phantom_image_label.setMaximumSize(
-                self.original_phantom_image.shape[1], self.original_phantom_image.shape[0])
-            self.ui.phantom_image_label.setMinimumSize(
-                self.original_phantom_image.shape[1], self.original_phantom_image.shape[0])
+            if image_path is not None:
+                self.original_phantom_image = cv2.imread(image_path, 0)
+                # modify the label size to fit the image
+                self.ui.phantom_image_label.setMaximumSize(
+                    self.original_phantom_image.shape[1], self.original_phantom_image.shape[0])
+                self.ui.phantom_image_label.setMinimumSize(
+                    self.original_phantom_image.shape[1], self.original_phantom_image.shape[0])
 
-            self.mean, self.std_dev = cv2.meanStdDev(
-                self.original_phantom_image)
             if image is None:
                 img = QImage(image_path)
             else:
-                img = QImage(image, image.shape[1], image.shape[0],
+                img = QImage(image.data, image.shape[1], image.shape[0],
                              image.strides[0], QImage.Format_Grayscale8)
             pixmap = QPixmap.fromImage(img)
             self.ui.phantom_image_label.setPixmap(pixmap)
@@ -224,7 +226,7 @@ class MainWindow(QtWidgets.QMainWindow):
             if self.ui.comboBox.currentText() == 'Show Phantom Image':
                 if self.scroll_flag:
                     self.show_image_on_label(
-                        self.image_path, self.img_enhanced)
+                        None, self.img_enhanced)
                 else:
                     self.show_image_on_label(self.image_path)
 
@@ -338,24 +340,60 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def change_phantom_size(self):
         try:
+            image = self.ui.phantom_image_label.pixmap().toImage()
+            # convert the QImage to matrix
+            image = qimage2ndarray.rgb_view(image)
+            # convert the matrix to grayscale
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
             index = self.ui.comboBox_2.currentIndex()
             if index == 0:
                 return
             if index == 1:
+                # get the image on the label
+
                 self.phantom_image_resized = cv2.resize(
-                    self.original_phantom_image, (16, 16))
+                    image, (16, 16))
+
+                cv2.imwrite('./images/phantom_modified/16x16.png',
+                            self.phantom_image_resized)
 
             elif index == 2:
                 self.phantom_image_resized = cv2.resize(
-                    self.original_phantom_image, (32, 32))
+                    image, (32, 32))
+
+                cv2.imwrite('./images/phantom_modified/32x32.png',
+                            self.phantom_image_resized)
 
             elif index == 3:
                 self.phantom_image_resized = cv2.resize(
-                    self.original_phantom_image, (64, 64))
+                    image, (64, 64))
+
+                cv2.imwrite('./images/phantom_modified/64x64.png',
+                            self.phantom_image_resized)
 
         except Exception as e:
             print(e)
 
+    def apply_noise(self, value):
+        try:
+            # Generate the noise
+            noise = np.zeros_like(self.original_phantom_image)
+            cv2.randn(noise, 0, value)
+
+            # Add the noise to the image
+            noisy_image = cv2.add(self.original_phantom_image, noise)
+
+            self.show_image_on_label(None, noisy_image)
+        except Exception as e:
+            print(e)
+
+    def reset_phantom_to_original(self):
+        try:
+            self.show_image_on_label(self.image_path)
+            self.ui.horizontalSlider.setValue(0)
+        except Exception as e:
+            print(e)
     # MRI Sequence
 
     def read_dial_values_and_calculate_ernst(self):
@@ -376,6 +414,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def apply_rf_pulse(self, image, flip_angle):
         try:
+
             if self.ui.comboBox_2.currentIndex() == 0:
                 self.popUpErrorMsg("Error", 'Please select a phantom size')
                 return
@@ -386,25 +425,19 @@ class MainWindow(QtWidgets.QMainWindow):
 
             flip_angle = int(flip_angle)
             rows, columns = image.shape
-            # make a rotation matrix with 90 along x-axis
             theta = flip_angle * np.pi/180  # angle in radians
             self.gx_phases = np.arange(0, 360, 360 / rows)
             self.gy_phases = np.arange(0, 360, 360 / rows)
             # rotation along y axis
-            rotation_matrix_in_y = np.array([[np.cos(theta), 0, np.sin(theta)],
-                                            [0, 1, 0],
-                                            [-np.sin(theta), 0, np.cos(theta)]])
+            R = np.array([[np.cos(theta), 0, np.sin(theta)],
+                          [0, 1, 0],
+                          [-np.sin(theta), 0, np.cos(theta)]])
 
-            self.new_3D_matrix_image = np.zeros((rows, columns, 3))
-            # loop over each pixel in the image
-            for i in range(rows):
-                for j in range(columns):
-                    # define the vector Mo
-                    Mo = [0, 0, image[i, j]]
-                    # Multiply the vector v by the rotation matrix rotation_matrix_in_y to get the flipped vector v_flipped
-                    Mo_flipped_xy_plane = np.round(
-                        np.dot(rotation_matrix_in_y, Mo), 2)
-                    self.new_3D_matrix_image[i, j] = Mo_flipped_xy_plane
+            # define the vector Mo for the entire image
+            Mo = np.zeros((rows, columns, 3))
+            Mo[:, :, 2] = image
+            # Multiply the vector v by the rotation matrix R to get the flipped vector v_flipped
+            self.new_3D_matrix_image = np.round(np.matmul(Mo, R.T), 2)
 
         except Exception as e:
             print(e)
@@ -414,11 +447,15 @@ class MainWindow(QtWidgets.QMainWindow):
             if image_after_rf_pulse is None:
                 self.popUpErrorMsg("Error", 'Please apply RF pulse first')
                 return
-            backup_image = image_after_rf_pulse.copy()
+
             rows, columns, _ = image_after_rf_pulse.shape
+            image_after_rf_pulse = image_after_rf_pulse.reshape(
+                rows * columns, 3)
+            # print(image_after_rf_pulse)
+            new_image_after_rf_pulse = image_after_rf_pulse.copy()
             k_space_2d = np.zeros((rows, columns), dtype=complex)
-            k_space = np.zeros((rows, columns))
-            phases = np.zeros((rows, columns))
+            k_space = np.ones((rows, columns))
+            phases = np.empty((rows, columns))
 
             # start the progress bar
             self.ui.progressBar.setValue(0)
@@ -427,32 +464,44 @@ class MainWindow(QtWidgets.QMainWindow):
             step_count = 0
 
             for row_index, gy_phase in enumerate(self.gy_phases):
+
+                phases = gy_phase * \
+                    np.arange(rows).reshape(-1, 1) + np.zeros((rows, columns))
+
+                phases_backup = phases.copy()
+
                 for column_index, gx_phase in enumerate(self.gx_phases):
-                    image_after_rf_pulse = backup_image.copy()
-                    # Update progress bar
+
+                    phases = phases_backup.copy()
+                    phases += gx_phase * np.arange(columns)
+
+                    end_phases = phases.reshape(rows * columns, 1)
+
+                    theta = end_phases * np.pi / 180
+
+                    cos_theta = np.cos(theta)
+                    sin_theta = np.sin(theta)
+
+                    R = np.stack([
+                        cos_theta, sin_theta, np.zeros_like(theta),
+                        -sin_theta, cos_theta, np.zeros_like(theta),
+                        np.zeros_like(theta), np.zeros_like(
+                            theta), np.ones_like(theta)
+                    ], axis=-1).reshape(-1, 3, 3)
+
+                    new_image_after_rf_pulse = np.matmul(
+                        R, image_after_rf_pulse.reshape(-1, 3, 1)).reshape(-1, 3)
+
+                    sum_x = np.round(np.sum(new_image_after_rf_pulse[:, 0]))
+                    sum_y = np.round(np.sum(new_image_after_rf_pulse[:, 1]))
+
+                    k_space_2d[row_index, column_index] = sum_x + 1j * sum_y
+                    k_space[row_index, column_index] = np.sqrt(
+                        sum_x**2 + sum_y**2)
+
                     step_count += 1
                     progress_percent = int(step_count / total_steps * 100)
                     self.ui.progressBar.setValue(progress_percent)
-                    for i in range(rows):
-                        for j in range(columns):
-                            pixel_value = image_after_rf_pulse[i, j, 0]
-                            phase_from_gy = gy_phase * i
-                            phase_from_gx = gx_phase * j
-                            applied_phase = (phase_from_gx + phase_from_gy)
-                            phases[i, j] = applied_phase
-                            applied_phase *= np.pi/180
-                            new_x_value = pixel_value * np.cos(applied_phase)
-                            new_y_value = pixel_value * np.sin(applied_phase)
-                            image_after_rf_pulse[i, j, 0] = new_x_value
-                            image_after_rf_pulse[i, j, 1] = new_y_value
-                    sum = np.round(
-                        np.sum(image_after_rf_pulse, axis=(0, 1)), 2)
-                    k_space_2d[row_index][column_index] = np.round(
-                        sum[0], 2) - 1j * np.round(sum[1], 2)
-
-                    k_space[row_index, column_index] = np.round(np.sqrt(
-                        sum[0]**2 + sum[1]**2), 2)
-
                     self.update_kspace(k_space)
                     self.update_image(k_space_2d)
 
@@ -481,7 +530,7 @@ class MainWindow(QtWidgets.QMainWindow):
         try:
             self.reconstructed_image_figure.clear()
             axes = self.reconstructed_image_figure.gca()
-
+            axes.set_xticks([])
             axes.set_yticks([])
 
             img = np.fft.ifft2(kspace_2d)

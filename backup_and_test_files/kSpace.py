@@ -42,24 +42,21 @@ print("=============================================")
 def apply_rf_pulse(image, flip_angle):
     rows, columns = image.shape
     # make a rotation matrix with 90 along x-axis
-    theta = flip_angle * np.pi/180  # angle in radians
+    theta = flip_angle * np.pi / 180  # angle in radians
 
     # rotation along y axis
     R = np.array([[np.cos(theta), 0, np.sin(theta)],
                   [0, 1, 0],
                   [-np.sin(theta), 0, np.cos(theta)]])
 
-    new_3D_matrix_image = np.zeros((rows, columns, 3))
-    # loop over each pixel in the image
-    for i in range(rows):
-        for j in range(columns):
-            # define the vector Mo
-            Mo = [0, 0, image[i, j]]
-            # Multiply the vector v by the rotation matrix R to get the flipped vector v_flipped
-            Mo_flipped_xy_plane = np.round(np.dot(R, Mo), 2)
-            new_3D_matrix_image[i, j] = Mo_flipped_xy_plane
+    # define the vector Mo for the entire image
+    Mo = np.zeros((rows, columns, 3))
+    Mo[:, :, 2] = image
 
-    return new_3D_matrix_image
+    # Multiply the vector v by the rotation matrix R to get the flipped vector v_flipped
+    Mo_flipped_xy_plane = np.round(np.matmul(Mo, R.T), 2)
+
+    return Mo_flipped_xy_plane
 
 
 # print(apply_rf_pulse(image, 60))
@@ -101,6 +98,7 @@ def apply_sequence(image_after_rf_pulse):
     image_after_rf_pulse = image_after_rf_pulse.reshape(rows * columns, 3)
     # print(image_after_rf_pulse)
     new_image_after_rf_pulse = image_after_rf_pulse.copy()
+    backup_image = image_after_rf_pulse.copy()
     k_space_2d = np.zeros((rows, columns), dtype=complex)
     k_space = np.ones((rows, columns))
     phases = np.empty((rows, columns))
@@ -118,14 +116,28 @@ def apply_sequence(image_after_rf_pulse):
 
             end_phases = phases.reshape(rows * columns, 1)
 
-            for index, end_phase in enumerate(end_phases):
-                theta = end_phase * np.pi/180
+            # for index, end_phase in enumerate(end_phases):
+            #     theta = end_phase * np.pi/180
 
-                R = np.array([[np.cos(theta), np.sin(theta), 0],
-                              [-np.sin(theta), np.cos(theta), 0],
-                              [0, 0, 1]])
-                new_image_after_rf_pulse[index] = np.dot(
-                    R, image_after_rf_pulse[index].reshape(3, 1)).reshape(3)
+            #     R = np.array([[np.cos(theta), np.sin(theta), 0],
+            #                   [-np.sin(theta), np.cos(theta), 0],
+            #                   [0, 0, 1]])
+            #     new_image_after_rf_pulse[index] = np.dot(
+            #         R, image_after_rf_pulse[index].reshape(3, 1)).reshape(3)
+
+            theta = end_phases * np.pi / 180
+
+            cos_theta = np.cos(theta)
+            sin_theta = np.sin(theta)
+
+            R = np.stack([
+                cos_theta, sin_theta, np.zeros_like(theta),
+                -sin_theta, cos_theta, np.zeros_like(theta),
+                np.zeros_like(theta), np.zeros_like(theta), np.ones_like(theta)
+            ], axis=-1).reshape(-1, 3, 3)
+
+            new_image_after_rf_pulse = np.matmul(
+                R, image_after_rf_pulse.reshape(-1, 3, 1)).reshape(-1, 3)
 
             # print(image_after_rf_pulse)
             sum_x = np.round(np.sum(new_image_after_rf_pulse[:, 0]))
@@ -134,6 +146,7 @@ def apply_sequence(image_after_rf_pulse):
             k_space_2d[row_index, column_index] = sum_x + 1j * sum_y
             k_space[row_index, column_index] = np.sqrt(sum_x**2 + sum_y**2)
 
+    print(k_space_2d)
     # theta = end_phases * np.pi/180
     # cos_theta = np.cos(theta)
     # sin_theta = np.sin(theta)

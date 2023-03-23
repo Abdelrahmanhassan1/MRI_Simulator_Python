@@ -1,46 +1,63 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QFileDialog
-from PyQt5.QtGui import QPixmap, QImage
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QPixmap, QImage
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QSlider, QVBoxLayout
 
-class ImageViewer(QMainWindow):
+import numpy as np
+import cv2
+
+
+class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
 
-        # Create a label to display the image
-        self.image_label = QLabel(self)
-        self.setCentralWidget(self.image_label)
+        # Load the image
+        self.image = cv2.imread("image.jpg")
 
-        # Set the window properties
-        self.setWindowTitle("Image Viewer")
-        self.setGeometry(100, 100, 800, 600)
+        # Create the widgets
+        self.image_label = QLabel()
+        self.slider = QSlider(Qt.Horizontal)
+        self.slider.setMinimum(0)
+        self.slider.setMaximum(100)
 
-        # Connect the mousePressEvent to handle pixel selection
-        self.image_label.mousePressEvent = self.handle_mouse_press
+        # Create the layout
+        layout = QVBoxLayout()
+        layout.addWidget(self.image_label)
+        layout.addWidget(self.slider)
+        self.setLayout(layout)
 
-    def open_image(self):
-        # Open a file dialog to select an image file
-        file_path, _ = QFileDialog.getOpenFileName(self, "Open Image", "", "Image Files (*.png *.jpg *.bmp)")
+        # Connect the slider signal to the noise function
+        self.slider.valueChanged.connect(self.apply_noise)
 
-        # Load the image and display it in the label
-        image = QImage(file_path)
-        pixmap = QPixmap.fromImage(image)
+        # Set the initial image
+        self.update_image(self.image)
+
+    def update_image(self, image):
+        # Convert the image to a QPixmap and set it on the label
+        pixmap = QPixmap.fromImage(
+            QImage(image.data, image.shape[1], image.shape[0], QImage.Format_RGB888))
         self.image_label.setPixmap(pixmap)
 
-    def handle_mouse_press(self, event):
-        # Get the position of the mouse click
-        x = event.pos().x()
-        y = event.pos().y()
+    def apply_noise(self, value):
+        # Convert the image to grayscale
+        gray = cv2.cvtColor(self.image, cv2.COLOR_BGR2GRAY)
 
-        # Get the color of the pixel at the clicked position
-        pixmap = self.image_label.pixmap()
-        if pixmap is not None:
-            pixel_color = pixmap.toImage().pixel(x, y)
-            intensity = QColor(pixel_color).getRgb()[0]
-            print("Pixel intensity:", intensity)
+        # Generate the noise
+        noise = np.zeros_like(gray)
+        cv2.randn(noise, 0, value)
 
-if __name__ == "__main__":
+        # Add the noise to the image
+        noisy_image = cv2.add(gray, noise)
+
+        # Convert the image back to color
+        color_image = cv2.cvtColor(noisy_image, cv2.COLOR_GRAY2BGR)
+
+        # Update the image label
+        self.update_image(color_image)
+
+
+if __name__ == '__main__':
     app = QApplication(sys.argv)
-    viewer = ImageViewer()
-    viewer.show()
+    window = MainWindow()
+    window.show()
     sys.exit(app.exec_())
