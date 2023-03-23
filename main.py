@@ -407,6 +407,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.horizontalSlider.setValue(0)
         except Exception as e:
             print(e)
+   
     # MRI Sequence
 
     def read_dial_values_and_calculate_ernst(self):
