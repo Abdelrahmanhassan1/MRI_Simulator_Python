@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(1605, 620)
+        MainWindow.resize(1673, 620)
         MainWindow.setMinimumSize(QtCore.QSize(1421, 620))
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
@@ -136,7 +136,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout_2.addWidget(self.updateBtn)
         self.verticalLayout_3.addLayout(self.horizontalLayout_2)
         self.signalPlot = PlotWidget(self.centralwidget)
-        self.signalPlot.setMinimumSize(QtCore.QSize(400, 400))
+        self.signalPlot.setMinimumSize(QtCore.QSize(500, 400))
         self.signalPlot.setMaximumSize(QtCore.QSize(16777215, 16777215))
         self.signalPlot.setObjectName("signalPlot")
         self.verticalLayout_3.addWidget(self.signalPlot)

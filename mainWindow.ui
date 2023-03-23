@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1605</width>
+    <width>1673</width>
     <height>620</height>
    </rect>
   </property>
@@ -321,7 +321,7 @@
          <widget class="PlotWidget" name="signalPlot">
           <property name="minimumSize">
            <size>
-            <width>400</width>
+            <width>500</width>
             <height>400</height>
            </size>
           </property>

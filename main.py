@@ -4,7 +4,7 @@ import math
 import time
 from PyQt5.QtWidgets import QMessageBox
 from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtGui import QPixmap, QImage, QColor, QPainter, QPen, QBrush, QIntValidator
+from PyQt5.QtGui import QPixmap, QImage, QColor, QPainter, QPen, QBrush, QIntValidator, QFont
 from PyQt5.QtCore import Qt, QRect
 import cv2
 import sys
@@ -86,7 +86,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.signalPlot.plotItem.addLine(y=7.5, pen=self.whitePen)
         self.ui.signalPlot.plotItem.addLine(y=10, pen=self.whitePen)
 
-        self.ui.signalPlot.plotItem.hideAxis('left')
+        # set the y axis labels
+        self.ui.signalPlot.plotItem.getAxis('left').setTicks(
+            [((0, 'RO'), (2.5, 'Gx (FE)'), (5, 'Gy (PE)'), (7.5, 'Gz (SS)'), (10, 'RF'))])
+
+        # set the x axis label
+        self.ui.signalPlot.plotItem.getAxis('bottom').setLabel('Time (ms)')
 
         self.RFplotter = self.ui.signalPlot.plot([], [], pen=self.redPen)
         self.GSSplotter = self.ui.signalPlot.plot([], [], pen=self.greenPen)
@@ -596,22 +601,25 @@ class MainWindow(QtWidgets.QMainWindow):
             self.startingTR_plotter.setData(
                 np.repeat(self.starting_TR_postion, 50), np.linspace(0, 11.5, 50))
 
-            self.ending_TR_postion = xAxiesVal[-50]
-            self.endingTR_plotter.setData(
-                np.repeat(self.ending_TR_postion, 50), np.linspace(10, 11.5, 50))
-            self.TR_horizontal_line.setData(np.linspace(
-                self.starting_TR_postion, self.ending_TR_postion, 50), np.repeat(11, 50))
+            if num > 1:
+                self.ending_TR_postion = xAxiesVal[150]
 
-            if hasattr(self, 'TR_text'):
-                self.ui.signalPlot.removeItem(self.TR_text)
+                self.endingTR_plotter.setData(
+                    np.repeat(self.ending_TR_postion, 50), np.linspace(10, 11.5, 50))
+                self.TR_horizontal_line.setData(np.linspace(
+                    self.starting_TR_postion, self.ending_TR_postion, 50), np.repeat(11.3, 50))
 
-            center = (self.starting_TR_postion + self.ending_TR_postion)
+                if hasattr(self, 'TR_text'):
+                    self.ui.signalPlot.removeItem(self.TR_text)
 
-            self.TR_text = pg.TextItem(
-                text=f"TR= {np.round(center,2)} ms", anchor=(0, 0))
+                center = (self.starting_TR_postion + self.ending_TR_postion)
 
-            self.TR_text.setPos(self.starting_TR_postion + center / 5, 11)
-            self.ui.signalPlot.addItem(self.TR_text)
+                self.TR_text = pg.TextItem(
+                    text=f"TR= {np.round(center,2)} ms", anchor=(0, 0))
+
+                self.TR_text.setPos(
+                    self.starting_TR_postion + center / 5, 11.3)
+                self.ui.signalPlot.addItem(self.TR_text)
 
         except Exception as e:
             print(e)
