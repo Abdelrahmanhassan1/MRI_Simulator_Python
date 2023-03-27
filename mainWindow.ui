@@ -20,7 +20,7 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QVBoxLayout" name="verticalLayout_15">
+   <layout class="QHBoxLayout" name="horizontalLayout_16">
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout_13">
       <item>
@@ -111,7 +111,7 @@
              </size>
             </property>
             <property name="text">
-             <string>Apply SNR Ratio</string>
+             <string>Apply Noise</string>
             </property>
             <property name="alignment">
              <set>Qt::AlignCenter</set>
@@ -336,216 +336,38 @@
        </layout>
       </item>
       <item>
-       <layout class="QVBoxLayout" name="verticalLayout_14">
+       <layout class="QVBoxLayout" name="verticalLayout_2">
         <item>
-         <layout class="QVBoxLayout" name="verticalLayout_2">
+         <layout class="QVBoxLayout" name="verticalLayout_6">
           <item>
-           <layout class="QVBoxLayout" name="verticalLayout_8">
+           <layout class="QHBoxLayout" name="horizontalLayout_6">
             <item>
-             <layout class="QVBoxLayout" name="verticalLayout_6">
+             <layout class="QVBoxLayout" name="verticalLayout_4">
               <item>
-               <layout class="QHBoxLayout" name="horizontalLayout_6">
-                <item>
-                 <layout class="QVBoxLayout" name="verticalLayout_4">
-                  <item>
-                   <widget class="QDial" name="dial">
-                    <property name="minimumSize">
-                     <size>
-                      <width>0</width>
-                      <height>60</height>
-                     </size>
-                    </property>
-                    <property name="font">
-                     <font>
-                      <pointsize>6</pointsize>
-                     </font>
-                    </property>
-                    <property name="minimum">
-                     <number>400</number>
-                    </property>
-                    <property name="maximum">
-                     <number>990</number>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <layout class="QHBoxLayout" name="horizontalLayout">
-                    <item>
-                     <widget class="QLabel" name="label_10">
-                      <property name="font">
-                       <font>
-                        <pointsize>10</pointsize>
-                       </font>
-                      </property>
-                      <property name="styleSheet">
-                       <string notr="true">border: 1px solid black;</string>
-                      </property>
-                      <property name="text">
-                       <string>TR(ms):</string>
-                      </property>
-                      <property name="alignment">
-                       <set>Qt::AlignCenter</set>
-                      </property>
-                     </widget>
-                    </item>
-                    <item>
-                     <widget class="QLabel" name="label_8">
-                      <property name="font">
-                       <font>
-                        <pointsize>10</pointsize>
-                       </font>
-                      </property>
-                      <property name="styleSheet">
-                       <string notr="true">border: 1px solid black;</string>
-                      </property>
-                      <property name="text">
-                       <string>400</string>
-                      </property>
-                      <property name="alignment">
-                       <set>Qt::AlignCenter</set>
-                      </property>
-                     </widget>
-                    </item>
-                   </layout>
-                  </item>
-                 </layout>
-                </item>
-                <item>
-                 <layout class="QVBoxLayout" name="verticalLayout_11">
-                  <item>
-                   <widget class="QDial" name="dial_3">
-                    <property name="minimumSize">
-                     <size>
-                      <width>0</width>
-                      <height>60</height>
-                     </size>
-                    </property>
-                    <property name="font">
-                     <font>
-                      <pointsize>6</pointsize>
-                     </font>
-                    </property>
-                    <property name="minimum">
-                     <number>400</number>
-                    </property>
-                    <property name="maximum">
-                     <number>990</number>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <layout class="QHBoxLayout" name="horizontalLayout_14">
-                    <item>
-                     <widget class="QLabel" name="label_17">
-                      <property name="font">
-                       <font>
-                        <pointsize>10</pointsize>
-                       </font>
-                      </property>
-                      <property name="styleSheet">
-                       <string notr="true">border: 1px solid black;</string>
-                      </property>
-                      <property name="text">
-                       <string>TE(ms):</string>
-                      </property>
-                      <property name="alignment">
-                       <set>Qt::AlignCenter</set>
-                      </property>
-                     </widget>
-                    </item>
-                    <item>
-                     <widget class="QLabel" name="label_18">
-                      <property name="font">
-                       <font>
-                        <pointsize>10</pointsize>
-                       </font>
-                      </property>
-                      <property name="styleSheet">
-                       <string notr="true">border: 1px solid black;</string>
-                      </property>
-                      <property name="text">
-                       <string>400</string>
-                      </property>
-                      <property name="alignment">
-                       <set>Qt::AlignCenter</set>
-                      </property>
-                     </widget>
-                    </item>
-                   </layout>
-                  </item>
-                 </layout>
-                </item>
-                <item>
-                 <layout class="QVBoxLayout" name="verticalLayout_5">
-                  <item>
-                   <widget class="QDial" name="dial_2">
-                    <property name="minimumSize">
-                     <size>
-                      <width>0</width>
-                      <height>60</height>
-                     </size>
-                    </property>
-                    <property name="font">
-                     <font>
-                      <pointsize>6</pointsize>
-                     </font>
-                    </property>
-                    <property name="minimum">
-                     <number>400</number>
-                    </property>
-                    <property name="maximum">
-                     <number>550</number>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <layout class="QHBoxLayout" name="horizontalLayout_3">
-                    <item>
-                     <widget class="QLabel" name="label_11">
-                      <property name="font">
-                       <font>
-                        <pointsize>10</pointsize>
-                       </font>
-                      </property>
-                      <property name="styleSheet">
-                       <string notr="true">border: 1px solid black;</string>
-                      </property>
-                      <property name="text">
-                       <string>T1 (ms):</string>
-                      </property>
-                      <property name="alignment">
-                       <set>Qt::AlignCenter</set>
-                      </property>
-                     </widget>
-                    </item>
-                    <item>
-                     <widget class="QLabel" name="label_9">
-                      <property name="font">
-                       <font>
-                        <pointsize>10</pointsize>
-                       </font>
-                      </property>
-                      <property name="styleSheet">
-                       <string notr="true">border: 1px solid black;</string>
-                      </property>
-                      <property name="text">
-                       <string>400</string>
-                      </property>
-                      <property name="alignment">
-                       <set>Qt::AlignCenter</set>
-                      </property>
-                     </widget>
-                    </item>
-                   </layout>
-                  </item>
-                 </layout>
-                </item>
-               </layout>
+               <widget class="QDial" name="dial">
+                <property name="minimumSize">
+                 <size>
+                  <width>0</width>
+                  <height>60</height>
+                 </size>
+                </property>
+                <property name="font">
+                 <font>
+                  <pointsize>6</pointsize>
+                 </font>
+                </property>
+                <property name="minimum">
+                 <number>400</number>
+                </property>
+                <property name="maximum">
+                 <number>990</number>
+                </property>
+               </widget>
               </item>
               <item>
-               <layout class="QHBoxLayout" name="horizontalLayout_5">
+               <layout class="QHBoxLayout" name="horizontalLayout">
                 <item>
-                 <widget class="QLabel" name="label_12">
+                 <widget class="QLabel" name="label_10">
                   <property name="font">
                    <font>
                     <pointsize>10</pointsize>
@@ -555,12 +377,15 @@
                    <string notr="true">border: 1px solid black;</string>
                   </property>
                   <property name="text">
-                   <string>Recommended Ernst Angle:</string>
+                   <string>TR(ms):</string>
+                  </property>
+                  <property name="alignment">
+                   <set>Qt::AlignCenter</set>
                   </property>
                  </widget>
                 </item>
                 <item>
-                 <widget class="QLabel" name="label_13">
+                 <widget class="QLabel" name="label_8">
                   <property name="font">
                    <font>
                     <pointsize>10</pointsize>
@@ -570,7 +395,7 @@
                    <string notr="true">border: 1px solid black;</string>
                   </property>
                   <property name="text">
-                   <string>90</string>
+                   <string>400</string>
                   </property>
                   <property name="alignment">
                    <set>Qt::AlignCenter</set>
@@ -582,71 +407,128 @@
              </layout>
             </item>
             <item>
-             <layout class="QVBoxLayout" name="verticalLayout_7">
+             <layout class="QVBoxLayout" name="verticalLayout_11">
               <item>
-               <widget class="QComboBox" name="comboBox_2">
+               <widget class="QDial" name="dial_3">
+                <property name="minimumSize">
+                 <size>
+                  <width>0</width>
+                  <height>60</height>
+                 </size>
+                </property>
                 <property name="font">
                  <font>
-                  <pointsize>10</pointsize>
+                  <pointsize>6</pointsize>
                  </font>
                 </property>
-                <item>
-                 <property name="text">
-                  <string>choose phantom size</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>16</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>32</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>64</string>
-                 </property>
-                </item>
+                <property name="minimum">
+                 <number>400</number>
+                </property>
+                <property name="maximum">
+                 <number>990</number>
+                </property>
                </widget>
               </item>
               <item>
-               <layout class="QHBoxLayout" name="horizontalLayout_7">
+               <layout class="QHBoxLayout" name="horizontalLayout_14">
                 <item>
-                 <widget class="QLineEdit" name="lineEdit">
+                 <widget class="QLabel" name="label_17">
                   <property name="font">
                    <font>
                     <pointsize>10</pointsize>
                    </font>
                   </property>
-                  <property name="layoutDirection">
-                   <enum>Qt::LeftToRight</enum>
+                  <property name="styleSheet">
+                   <string notr="true">border: 1px solid black;</string>
+                  </property>
+                  <property name="text">
+                   <string>TE(ms):</string>
                   </property>
                   <property name="alignment">
                    <set>Qt::AlignCenter</set>
                   </property>
-                  <property name="placeholderText">
-                   <string>Enter Flip Angle: e.x 90</string>
-                  </property>
                  </widget>
                 </item>
                 <item>
-                 <widget class="QPushButton" name="pushButton">
-                  <property name="minimumSize">
-                   <size>
-                    <width>200</width>
-                    <height>0</height>
-                   </size>
-                  </property>
+                 <widget class="QLabel" name="label_18">
                   <property name="font">
                    <font>
                     <pointsize>10</pointsize>
                    </font>
                   </property>
+                  <property name="styleSheet">
+                   <string notr="true">border: 1px solid black;</string>
+                  </property>
                   <property name="text">
-                   <string>Apply RF</string>
+                   <string>400</string>
+                  </property>
+                  <property name="alignment">
+                   <set>Qt::AlignCenter</set>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <layout class="QVBoxLayout" name="verticalLayout_5">
+              <item>
+               <widget class="QDial" name="dial_2">
+                <property name="minimumSize">
+                 <size>
+                  <width>0</width>
+                  <height>60</height>
+                 </size>
+                </property>
+                <property name="font">
+                 <font>
+                  <pointsize>6</pointsize>
+                 </font>
+                </property>
+                <property name="minimum">
+                 <number>400</number>
+                </property>
+                <property name="maximum">
+                 <number>550</number>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <layout class="QHBoxLayout" name="horizontalLayout_3">
+                <item>
+                 <widget class="QLabel" name="label_11">
+                  <property name="font">
+                   <font>
+                    <pointsize>10</pointsize>
+                   </font>
+                  </property>
+                  <property name="styleSheet">
+                   <string notr="true">border: 1px solid black;</string>
+                  </property>
+                  <property name="text">
+                   <string>T1 (ms):</string>
+                  </property>
+                  <property name="alignment">
+                   <set>Qt::AlignCenter</set>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QLabel" name="label_9">
+                  <property name="font">
+                   <font>
+                    <pointsize>10</pointsize>
+                   </font>
+                  </property>
+                  <property name="styleSheet">
+                   <string notr="true">border: 1px solid black;</string>
+                  </property>
+                  <property name="text">
+                   <string>400</string>
+                  </property>
+                  <property name="alignment">
+                   <set>Qt::AlignCenter</set>
                   </property>
                  </widget>
                 </item>
@@ -657,33 +539,127 @@
            </layout>
           </item>
           <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_12">
+           <layout class="QHBoxLayout" name="horizontalLayout_5">
             <item>
-             <widget class="QPushButton" name="pushButton_2">
-              <property name="minimumSize">
-               <size>
-                <width>150</width>
-                <height>0</height>
-               </size>
-              </property>
+             <widget class="QLabel" name="label_12">
               <property name="font">
                <font>
                 <pointsize>10</pointsize>
                </font>
               </property>
+              <property name="styleSheet">
+               <string notr="true">border: 1px solid black;</string>
+              </property>
               <property name="text">
-               <string>Apply Gradient</string>
+               <string>Recommended Ernst Angle:</string>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QProgressBar" name="progressBar">
-              <property name="value">
-               <number>0</number>
+             <widget class="QLabel" name="label_13">
+              <property name="font">
+               <font>
+                <pointsize>10</pointsize>
+               </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">border: 1px solid black;</string>
+              </property>
+              <property name="text">
+               <string>90</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
               </property>
              </widget>
             </item>
            </layout>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_7">
+          <item>
+           <widget class="QComboBox" name="comboBox_2">
+            <property name="font">
+             <font>
+              <pointsize>10</pointsize>
+             </font>
+            </property>
+            <item>
+             <property name="text">
+              <string>choose phantom size</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>16 x16 </string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>32 x 32</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>64 x 64</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="lineEdit">
+            <property name="maximumSize">
+             <size>
+              <width>300</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="font">
+             <font>
+              <pointsize>10</pointsize>
+             </font>
+            </property>
+            <property name="layoutDirection">
+             <enum>Qt::LeftToRight</enum>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+            <property name="placeholderText">
+             <string>Enter Flip Angle: e.x 90</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_12">
+          <item>
+           <widget class="QPushButton" name="pushButton_2">
+            <property name="minimumSize">
+             <size>
+              <width>150</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="font">
+             <font>
+              <pointsize>10</pointsize>
+             </font>
+            </property>
+            <property name="text">
+             <string>Apply Gradient</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QProgressBar" name="progressBar">
+            <property name="value">
+             <number>0</number>
+            </property>
+           </widget>
           </item>
          </layout>
         </item>
@@ -716,6 +692,35 @@
               <property name="alignment">
                <set>Qt::AlignCenter</set>
               </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QComboBox" name="comboBox_3">
+              <item>
+               <property name="text">
+                <string>Choose Acquisition System</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Cartesian</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Spiral</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Zig Zag</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Radial</string>
+               </property>
+              </item>
              </widget>
             </item>
             <item>

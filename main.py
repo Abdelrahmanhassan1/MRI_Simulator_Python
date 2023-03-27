@@ -115,10 +115,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.updateBtn.released.connect(self.update)
 
         # RF and Gradient
-        self.ui.pushButton.released.connect(
-            lambda: self.apply_rf_pulse(self.phantom_image_resized, self.ui.lineEdit.text()))
-        self.ui.pushButton_2.released.connect(
-            lambda: self.apply_gradient(self.new_3D_matrix_image))
+        self.ui.pushButton_2.released.connect(self.apply_gradient)
 
         self.read_dial_values_and_calculate_ernst()
         for dial in [self.ui.dial, self.ui.dial_2, self.ui.dial_3]:
@@ -407,7 +404,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.horizontalSlider.setValue(0)
         except Exception as e:
             print(e)
-   
+
     # MRI Sequence
 
     def read_dial_values_and_calculate_ernst(self):
@@ -451,16 +448,15 @@ class MainWindow(QtWidgets.QMainWindow):
             Mo = np.zeros((rows, columns, 3))
             Mo[:, :, 2] = image
             # Multiply the vector v by the rotation matrix R to get the flipped vector v_flipped
-            self.new_3D_matrix_image = np.round(np.matmul(Mo, R.T), 2)
+            return np.round(np.matmul(Mo, R.T), 2)
 
         except Exception as e:
             print(e)
 
-    def apply_gradient(self, image_after_rf_pulse):
+    def apply_gradient(self):
         try:
-            if image_after_rf_pulse is None:
-                self.popUpErrorMsg("Error", 'Please apply RF pulse first')
-                return
+            image_after_rf_pulse = self.apply_rf_pulse(self.phantom_image_resized,
+                                                       self.ui.lineEdit.text())
 
             rows, columns, _ = image_after_rf_pulse.shape
             image_after_rf_pulse = image_after_rf_pulse.reshape(
