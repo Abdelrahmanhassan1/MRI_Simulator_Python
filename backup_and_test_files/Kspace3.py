@@ -6,18 +6,17 @@ import numpy as np
 import matplotlib.pyplot as plt
 import cv2
 # construct 4x4 image
-image = np.array([[1, 2, 3, 4],
-                  [5, 6, 7, 8],
-                  [9, 10, 11, 12],
-                  [13, 14, 15, 16]])
+image = np.array([[1, 2, 3],
+                  [5, 6, 7],
+                  [9, 10, 11]])
 
 # image = cv2.imread('../images/shepp_logan_phantom/128px-Shepp_logan.png')
 # print(f"image shape: {image.shape}")
 # convert the image to numpy array
 # image = np.array(image)
 
-plt.imshow(image, cmap='gray')
-plt.show()
+# plt.imshow(image, cmap='gray')
+# plt.show()
 a_fft = np.fft.fft2(image)
 
 # print the result
@@ -126,7 +125,7 @@ def apply_sequence(image_after_rf_pulse):
                     new_y_value = pixel_value * np.sin(applied_phase)
                     image_after_rf_pulse[i, j, 0] = new_x_value
                     image_after_rf_pulse[i, j, 1] = new_y_value
-            print(f"image_after_rf_pulse", image_after_rf_pulse)
+            # print(f"image_after_rf_pulse", image_after_rf_pulse)
             # print(f"phases \n", phases)
             # print(f"image_after_rf_pulse", image_after_rf_pulse)
             # sum the image vectors
@@ -145,14 +144,14 @@ def apply_sequence(image_after_rf_pulse):
             # print(f"k_space \n", k_space)
             # update_kspace(k_space)
     # update_image(k_space_2d)
-    img = np.fft.ifft2(k_space_2d)
-    img = np.real(img).astype(np.uint8)
-    plt.imshow(img, cmap='gray')
-    plt.show()
+    # img = np.fft.ifft2(k_space_2d)
+    # img = np.real(img).astype(np.uint8)
+    # plt.imshow(img, cmap='gray')
+    # plt.show()
 
     # print("=============================================")
     print(f"k_space 2d \n", k_space_2d)
-    print(f"k_space \n", k_space)
+    # print(f"k_space \n", k_space)
 
     # plt.rcParams["figure.figsize"] = [7.00, 3.50]
 

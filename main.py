@@ -115,7 +115,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.updateBtn.released.connect(self.update)
 
         # RF and Gradient
-        self.ui.pushButton_2.released.connect(self.apply_gradient)
+        self.ui.pushButton_2.released.connect(self.apply_rf_gradient_sequence)
 
         self.read_dial_values_and_calculate_ernst()
         for dial in [self.ui.dial, self.ui.dial_2, self.ui.dial_3]:
@@ -406,6 +406,102 @@ class MainWindow(QtWidgets.QMainWindow):
             print(e)
 
     # MRI Sequence
+    def select_acquisition_system(self):
+        try:
+            if self.ui.comboBox_3.currentIndex() == 0:
+                self.popUpErrorMsg(
+                    "Error", "Please select an acquisition system")
+                return "Error"
+            elif self.ui.comboBox_3.currentIndex() == 1:
+                self.create_cartesian_kspace()
+            elif self.ui.comboBox_3.currentIndex() == 2:
+                self.create_spiral_kspace()
+            elif self.ui.comboBox_3.currentIndex() == 3:
+                self.create_zig_zag_kspace()
+
+        except Exception as e:
+            print(e)
+
+    def create_cartesian_kspace(self):
+        try:
+            self.kspaceIndicesVisisted = np.array([], dtype=int)
+            for i in range(0, self.phantom_image_resized.shape[0]):
+                for j in range(0, self.phantom_image_resized.shape[1]):
+                    self.kspaceIndicesVisisted = np.append(
+                        self.kspaceIndicesVisisted, [i, j])
+            self.kspaceIndicesVisisted = self.kspaceIndicesVisisted.reshape(
+                -1, 2)
+
+        except Exception as e:
+            print(e)
+
+    def create_spiral_kspace(self):
+        try:
+            self.kspaceIndicesVisisted = np.array([], dtype=int)
+            top = 0
+            bottom = len(self.phantom_image_resized) - 1
+            left = 0
+            right = len(self.phantom_image_resized[0]) - 1
+            direction = "right"
+
+            while top <= bottom and left <= right:
+                if direction == "right":
+                    for i in range(left, right+1):
+
+                        self.kspaceIndicesVisisted = np.append(
+                            self.kspaceIndicesVisisted, [top, i])
+                    top += 1
+                    direction = "down"
+                elif direction == "down":
+                    for i in range(top, bottom+1):
+
+                        self.kspaceIndicesVisisted = np.append(
+                            self.kspaceIndicesVisisted, [i, right])
+                    right -= 1
+                    direction = "left"
+                elif direction == "left":
+                    for i in range(right, left-1, -1):
+
+                        self.kspaceIndicesVisisted = np.append(
+                            self.kspaceIndicesVisisted, [bottom, i])
+                    bottom -= 1
+                    direction = "up"
+                elif direction == "up":
+                    for i in range(bottom, top-1, -1):
+
+                        self.kspaceIndicesVisisted = np.append(
+                            self.kspaceIndicesVisisted, [i, left])
+                    left += 1
+                    direction = "right"
+
+            self.kspaceIndicesVisisted = self.kspaceIndicesVisisted.reshape(
+                -1, 2)
+            # reverse the indices
+            self.kspaceIndicesVisisted = self.kspaceIndicesVisisted[::-1]
+        except Exception as e:
+            print(e)
+
+    def create_zig_zag_kspace(self):
+        try:
+            self.kspaceIndicesVisisted = np.array([], dtype=int)
+            n = len(self.phantom_image_resized)
+            going_down = True
+            for i in range(n):
+                if going_down:
+                    for j in range(n):
+                        self.kspaceIndicesVisisted = np.append(
+                            self.kspaceIndicesVisisted, [i, j])
+                    going_down = False
+                else:
+                    for j in range(n-1, -1, -1):
+                        self.kspaceIndicesVisisted = np.append(
+                            self.kspaceIndicesVisisted, [i, j])
+                    going_down = True
+
+            self.kspaceIndicesVisisted = self.kspaceIndicesVisisted.reshape(
+                -1, 2)
+        except Exception as e:
+            print(e)
 
     def read_dial_values_and_calculate_ernst(self):
         try:
@@ -453,7 +549,7 @@ class MainWindow(QtWidgets.QMainWindow):
         except Exception as e:
             print(e)
 
-    def apply_gradient(self):
+    def apply_gradient_deprecated(self):
         try:
             image_after_rf_pulse = self.apply_rf_pulse(self.phantom_image_resized,
                                                        self.ui.lineEdit.text())
@@ -515,6 +611,63 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.update_kspace(k_space)
                     self.update_image(k_space_2d)
 
+        except Exception as e:
+            print(e)
+
+    def apply_rf_gradient_sequence(self):
+        try:
+            if self.select_acquisition_system() == "Error":
+                return
+            image_after_rf_pulse = self.apply_rf_pulse(self.phantom_image_resized,
+                                                       self.ui.lineEdit.text())
+
+            kspace_length = len(self.kspaceIndicesVisisted)
+
+            rows, columns, _ = image_after_rf_pulse.shape
+            kspaceAngle = 2 * np.pi / rows
+            k_space_2d = np.zeros((rows, columns), dtype=complex)
+            k_space = np.ones((rows, columns))
+
+            # start the progress bar
+            self.ui.progressBar.setValue(0)
+            total_steps = len(self.gy_phases) * len(self.gx_phases)
+
+            step_count = 0
+
+            for index in range(kspace_length):
+                u = self.kspaceIndicesVisisted[index, 0]
+                v = self.kspaceIndicesVisisted[index, 1]
+
+                image_after_sequence = image_after_rf_pulse.copy()
+                for i in range(rows):
+                    for j in range(columns):
+                        x_angle = i * kspaceAngle * u
+                        y_angle = j * kspaceAngle * v
+                        angle = x_angle + y_angle
+
+                        rotation_matrix = np.array([[np.cos(angle), np.sin(angle), 0],
+                                                    [-np.sin(angle),
+                                                        np.cos(angle), 0],
+                                                    [0, 0, 1]])
+                        Mo_flipped = image_after_rf_pulse[i, j]
+                        # apply rotation matrix to the flipped Mo
+                        Mo_flipped = np.dot(rotation_matrix, Mo_flipped)
+                        image_after_sequence[i, j] = Mo_flipped
+                # print(f"phase matrix: u {u} v {v} \n {phases}")
+
+                # sum the x values of the image after sequence
+                sum_x = np.round(np.sum(image_after_sequence[:, :, 0]), 2)
+                # sum the y values of the image after sequence
+                sum_y = np.round(np.sum(image_after_sequence[:, :, 1]), 2)
+                k_space_2d[u, v] = sum_x + 1j * sum_y
+                k_space[u, v] = np.sqrt(sum_x**2 + sum_y**2)
+
+                step_count += 1
+                progress_percent = int(step_count / total_steps * 100)
+                self.ui.progressBar.setValue(progress_percent)
+
+                self.update_kspace(k_space)
+                self.update_image(k_space_2d)
         except Exception as e:
             print(e)
 
