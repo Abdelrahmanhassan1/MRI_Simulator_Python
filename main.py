@@ -418,7 +418,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.create_spiral_kspace()
             elif self.ui.comboBox_3.currentIndex() == 3:
                 self.create_zig_zag_kspace()
-
+            elif self.ui.comboBox_3.currentIndex() == 4:
+                self.create_radial_kspace()
         except Exception as e:
             print(e)
 
@@ -498,6 +499,94 @@ class MainWindow(QtWidgets.QMainWindow):
                             self.kspaceIndicesVisisted, [i, j])
                     going_down = True
 
+            self.kspaceIndicesVisisted = self.kspaceIndicesVisisted.reshape(
+                -1, 2)
+        except Exception as e:
+            print(e)
+
+    def create_radial_kspace(self):
+        try:
+
+            self.kspaceIndicesVisisted = np.array([], dtype=int)
+            n = len(self.phantom_image_resized)
+            row = col = n // 2
+            # main arrows from the center
+            # top Right
+            topRight = np.array([], dtype=int)
+            x = row
+            y = col
+            while x > 0 and y < n - 1:
+                x -= 1
+                y += 1
+                topRight = np.append(topRight, [x, y])
+
+            # bottom Right
+            bottomRight = np.array([], dtype=int)
+            x = row
+            y = col
+            while x < n - 1 and y < n - 1:
+                x += 1
+                y += 1
+                bottomRight = np.append(bottomRight, [x, y])
+
+            # bottom Left
+            bottomLeft = np.array([], dtype=int)
+            x = row
+            y = col
+            while x < n - 1 and y > 0:
+                x += 1
+                y -= 1
+                bottomLeft = np.append(bottomLeft, [x, y])
+
+            # top Left
+            topLeft = np.array([], dtype=int)
+            x = row
+            y = col
+            while x > 0 and y > 0:
+                x -= 1
+                y -= 1
+                topLeft = np.append(topLeft, [x, y])
+
+            # top
+            top = np.array([], dtype=int)
+            x = row
+            y = col
+            while x > 0:
+                x -= 1
+                top = np.append(top, [x, y])
+
+            # right
+            right = np.array([], dtype=int)
+            x = row
+            y = col
+            while y < n - 1:
+                y += 1
+                right = np.append(right, [x, y])
+
+            # bottom
+            bottom = np.array([], dtype=int)
+            x = row
+            y = col
+            while x < n - 1:
+                x += 1
+                bottom = np.append(bottom, [x, y])
+
+            # left
+            left = np.array([], dtype=int)
+            x = row
+            y = col
+            while y > 0:
+                y -= 1
+                left = np.append(left, [x, y])
+
+            # combine all the arrays
+            self.kspaceIndicesVisisted = np.concatenate(
+                (topRight, bottomRight, bottomLeft, topLeft, top, right, bottom, left))
+
+            # add the center to the first index of the array
+            self.kspaceIndicesVisisted = np.insert(
+                self.kspaceIndicesVisisted, 0, [row, col])
+            # reshape the array
             self.kspaceIndicesVisisted = self.kspaceIndicesVisisted.reshape(
                 -1, 2)
         except Exception as e:
@@ -626,7 +715,7 @@ class MainWindow(QtWidgets.QMainWindow):
             rows, columns, _ = image_after_rf_pulse.shape
             kspaceAngle = 2 * np.pi / rows
             k_space_2d = np.zeros((rows, columns), dtype=complex)
-            k_space = np.ones((rows, columns))
+            k_space = np.full((rows, columns), float('inf'))
 
             # start the progress bar
             self.ui.progressBar.setValue(0)
