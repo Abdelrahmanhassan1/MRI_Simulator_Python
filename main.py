@@ -125,6 +125,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.horizontalSlider.valueChanged.connect(self.apply_noise)
         self.ui.pushButton_3.released.connect(self.reset_phantom_to_original)
 
+        self.ui.pushButton.released.connect(self.plot_chosen_sequence)
+
     @ QtCore.pyqtSlot()
     def show_image_on_label(self, image_path, image=None):
         try:
@@ -717,7 +719,6 @@ class MainWindow(QtWidgets.QMainWindow):
             k_space_2d = np.zeros((rows, columns), dtype=complex)
             k_space = np.full((rows, columns), float('inf'))
 
-            # start the progress bar
             self.ui.progressBar.setValue(0)
             total_steps = len(self.gy_phases) * len(self.gx_phases)
 
@@ -739,14 +740,16 @@ class MainWindow(QtWidgets.QMainWindow):
                                                         np.cos(angle), 0],
                                                     [0, 0, 1]])
                         Mo_flipped = image_after_rf_pulse[i, j]
-                        # apply rotation matrix to the flipped Mo
+
                         Mo_flipped = np.dot(rotation_matrix, Mo_flipped)
                         image_after_sequence[i, j] = Mo_flipped
-                # print(f"phase matrix: u {u} v {v} \n {phases}")
 
-                # sum the x values of the image after sequence
+                        # delay_recovery_matrix = self.create_delay_recovery_matrix(
+                        #     0.1, i, j)
+                        # image_after_sequence[i, j] = np.dot(
+                        #     delay_recovery_matrix, image_after_sequence[i, j])
+
                 sum_x = np.round(np.sum(image_after_sequence[:, :, 0]), 2)
-                # sum the y values of the image after sequence
                 sum_y = np.round(np.sum(image_after_sequence[:, :, 1]), 2)
                 k_space_2d[u, v] = sum_x + 1j * sum_y
                 k_space[u, v] = np.sqrt(sum_x**2 + sum_y**2)
@@ -759,6 +762,13 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.update_image(k_space_2d)
         except Exception as e:
             print(e)
+
+    def create_delay_recovery_matrix(self, t, i, j):
+        t1_value = self.t1WeightedImage[i, j]
+        t2_value = self.t2WeightedImage[i, j]
+        return np.array([[np.exp(-t / t2_value), 0, 0],
+                         [0, np.exp(-t / t2_value), 0],
+                         [0, 0, (1 - np.exp(-t / t1_value))]])
 
     def update_kspace(self, kspace):
         try:
@@ -842,7 +852,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             self.starting_TR_postion = xAxiesVal[50]
             self.startingTR_plotter.setData(
-                np.repeat(self.starting_TR_postion, 50), np.linspace(0, 11.5, 50))
+                np.repeat(self.starting_TR_postion, 50), np.linspace(-0.5, 11.5, 50))
 
             if num > 1:
                 self.ending_TR_postion = xAxiesVal[150]
@@ -867,10 +877,25 @@ class MainWindow(QtWidgets.QMainWindow):
         except Exception as e:
             print(e)
 
-    def plot_Gss(self, start, amp, num=1):
+    def plot_Gss(self, start, amp, num=1, inverted=False):
         try:
-            xAxiesVal, yAxiesVal = self.prebGraphData(
-                start, amp, num, square_wave, elevation=7.5, step=1)
+            if num > 1 and inverted:
+                xAxiesVal, yAxiesVal = self.prebGraphData(
+                    start, amp, num, square_wave, elevation=7.5, step=1)
+                # delete the last 50 points
+                xAxiesVal = xAxiesVal[:-50]
+                yAxiesVal = yAxiesVal[:-50]
+
+                # update the last 50 points of y_axis to be multiplied by -1 and add 7.5
+                yAxiesVal[-50:] = np.multiply(yAxiesVal[-50:], -1) + 7.5 + 7.5
+
+                # add a zero point to the end of the x and y axies
+                xAxiesVal.append(xAxiesVal[-1] + 0.01)
+                yAxiesVal.append(7.5)
+
+            else:
+                xAxiesVal, yAxiesVal = self.prebGraphData(
+                    start, amp, num, square_wave, elevation=7.5, step=1)
             self.GSSplotter.setData(xAxiesVal, yAxiesVal)
         except Exception as e:
             print(e)
@@ -883,10 +908,25 @@ class MainWindow(QtWidgets.QMainWindow):
         except Exception as e:
             print(e)
 
-    def plot_Gfe(self, start, amp, num=1):
+    def plot_Gfe(self, start, amp, num=1, inverted=False):
         try:
-            xAxiesVal, yAxiesVal = self.prebGraphData(
-                start, amp, num, square_wave, elevation=2.5, step=1)
+            if num > 1 and inverted:
+                xAxiesVal, yAxiesVal = self.prebGraphData(
+                    start, amp, num, square_wave, elevation=2.5, step=1)
+                # delete the first 50 points
+                xAxiesVal = xAxiesVal[:-50]
+                yAxiesVal = yAxiesVal[:-50]
+
+                # update the first 50 points of y_axis to be multiplied by -1 and add 2.5
+                yAxiesVal[:50] = np.multiply(yAxiesVal[:50], -1) + 2.5 + 2.5
+
+                # add a zero point to the end of the x and y axies
+                xAxiesVal.append(xAxiesVal[-1] + 0.01)
+                yAxiesVal.append(2.5)
+
+            else:
+                xAxiesVal, yAxiesVal = self.prebGraphData(
+                    start, amp, num, square_wave, elevation=2.5, step=1)
             self.GFEplotter.setData(xAxiesVal, yAxiesVal)
         except Exception as e:
             print(e)
@@ -899,9 +939,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
             self.TE_postion = xAxiesVal[50]
             self.TE_plotter.setData(np.repeat(self.TE_postion, 50),
-                                    np.linspace(0, 2.2, 50))
+                                    np.linspace(-0.5, 1, 50))
             self.TE_horizontal_line.setData(np.linspace(self.starting_TR_postion, self.TE_postion, 50),
-                                            np.repeat(1.8, 50))
+                                            np.repeat(-0.5, 50))
 
             if hasattr(self, 'TE_text'):
                 self.ui.signalPlot.removeItem(self.TE_text)
@@ -911,8 +951,32 @@ class MainWindow(QtWidgets.QMainWindow):
             self.TE_text = pg.TextItem(
                 text=f"TE= {np.round(center,2)} ms", anchor=(0, 0))
 
-            self.TE_text.setPos(self.starting_TR_postion + 0.2, 1.8)
+            self.TE_text.setPos(self.starting_TR_postion + 0.2, -0.6)
+
             self.ui.signalPlot.addItem(self.TE_text)
+
+        except Exception as e:
+            print(e)
+
+    def plot_GRE_sequence(self):
+        try:
+            self.plot_Rf(1.0, 1.0)
+            self.plot_Gss(1.0, 1.0, 2, True)
+            self.plot_Gpe(2, 1.0)
+            self.plot_Gfe(2, 1.0, 2, True)
+            self.plot_RO(3, 1.0)
+        except Exception as e:
+            print(e)
+
+    def plot_chosen_sequence(self):
+        try:
+            if self.ui.comboBox_4.currentText() == "GRE":
+                print("GRE")
+                self.plot_GRE_sequence()
+            elif self.ui.comboBox_4.currentText() == "SpinEcho":
+                self.plot_SE_sequence()
+            elif self.ui.comboBox_4.currentText() == "SSFP":
+                self.plot_FLASH_sequence()
 
         except Exception as e:
             print(e)
