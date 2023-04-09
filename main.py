@@ -29,6 +29,7 @@ def half_sin_wave(Amp, Freq=1):
 
 
 class MainWindow(QtWidgets.QMainWindow):
+
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__()
         self.ui = Ui_MainWindow()
