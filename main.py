@@ -16,6 +16,8 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from ui_mainWindow import Ui_MainWindow
 
+def flat_line(Amp, NumOfPoints=100):
+    return np.full(NumOfPoints, Amp)
 
 def square_wave(Amp, NumOfPoints=100):
     arr = np.full(NumOfPoints, Amp)
@@ -913,7 +915,7 @@ class MainWindow(QtWidgets.QMainWindow):
         try:
             if num > 1 and inverted:
                 xAxiesVal, yAxiesVal = self.prebGraphData(
-                    start, amp, num, square_wave, elevation=2.5, step=1)
+                    start, amp, num, flat_line, elevation=2.5, step=1)
                 # delete the first 50 points
                 xAxiesVal = xAxiesVal[:-50]
                 yAxiesVal = yAxiesVal[:-50]
@@ -921,7 +923,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 # update the first 50 points of y_axis to be multiplied by -1 and add 2.5
                 yAxiesVal[:50] = np.multiply(yAxiesVal[:50], -1) + 2.5 + 2.5
 
-                # add a zero point to the end of the x and y axies
+                # add a zero point to the end and start of the x and y axies
+                yAxiesVal[0] = 2.5
                 xAxiesVal.append(xAxiesVal[-1] + 0.01)
                 yAxiesVal.append(2.5)
 
