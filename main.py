@@ -841,17 +841,21 @@ class MainWindow(QtWidgets.QMainWindow):
             for j in range(int(num)):
                 for i in np.linspace(1, -1, repPerPlace):
                     if type(oscillation) == list:
-                        
-                        yAxiesVal.extend(elevation + (function(amp) * i * (oscillation[j]/abs(oscillation[j]))))
+
+                        yAxiesVal.extend(
+                            elevation + (function(amp) * i * (oscillation[j]/abs(oscillation[j]))))
                         xAxiesVal.extend(np.arange(start, start + 1, 1/100))
                         # delete a number of points based on the value of oscillation as the number of points is 100 and the oscillation is 0.1 so 90 points will be deleted
                         if abs(oscillation[j]) < 1:
-                            del yAxiesVal[-int( (100 -  abs(100 * oscillation[j])) ):]
-                            del xAxiesVal[-int( (100 -  abs(100 * oscillation[j])) ):]
-                            #modifiy the start based on the number of points deleted
+                            del yAxiesVal[-int((100 -
+                                               abs(100 * oscillation[j]))):]
+                            del xAxiesVal[-int((100 -
+                                               abs(100 * oscillation[j]))):]
+                            # modifiy the start based on the number of points deleted
                             start += -abs(oscillation[j])
                     else:
-                        yAxiesVal.extend(elevation + (function(amp) * i * np.power(-1, j)) if oscillation else elevation + (function(amp) * i))
+                        yAxiesVal.extend(elevation + (function(amp) * i * np.power(-1, j))
+                                         if oscillation else elevation + (function(amp) * i))
                         xAxiesVal.extend(np.arange(start, start + 1, 1/100))
                 start += step
 
@@ -859,18 +863,36 @@ class MainWindow(QtWidgets.QMainWindow):
         except Exception as e:
             print(e)
 
-    def plot_Rf(self, start, amp, num=1):
+    def plot_Rf(self, start, amp, num=1, text1="", text2=""):
         try:
             if type(amp) == list:
-                xAxiesVal90deg, yAxiesVal90deg = self.prebGraphData(start, amp[0], 1, half_sin_wave, elevation=10)
-                xAxiesVal180deg, yAxiesVal180deg = self.prebGraphData(start + 3, amp[1], 1, half_sin_wave, elevation=10)
+                xAxiesVal90deg, yAxiesVal90deg = self.prebGraphData(
+                    start, amp[0], 1, half_sin_wave, elevation=10)
+                xAxiesVal180deg, yAxiesVal180deg = self.prebGraphData(
+                    start + 3, amp[1], 1, half_sin_wave, elevation=10)
 
                 xAxiesVal = xAxiesVal90deg + xAxiesVal180deg
                 yAxiesVal = yAxiesVal90deg + yAxiesVal180deg
 
                 self.RFplotter.setData(xAxiesVal, yAxiesVal)
+
+                T1_text = pg.TextItem(
+                    text=text1, anchor=(0, 0))
+
+                T1_text.setPos(
+                    1.2, 11)
+
+                T2_text = pg.TextItem(
+                    text=text2, anchor=(0, 0))
+
+                T2_text.setPos(
+                    4.2, 11.5)
+
+                self.ui.signalPlot.addItem(T1_text)
+                self.ui.signalPlot.addItem(T2_text)
+
                 return
-            
+
             xAxiesVal, yAxiesVal = self.prebGraphData(
                 start, amp, num, half_sin_wave, elevation=10, step=5)
             self.RFplotter.setData(xAxiesVal, yAxiesVal)
@@ -899,23 +921,22 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.starting_TR_postion + center / 5, 11.3)
                 self.ui.signalPlot.addItem(self.TR_text)
 
-            
-
-
         except Exception as e:
             print(e)
 
     def plot_Gss(self, start, amp, num=1, inverted=False, spinEcho=False):
         try:
             if num > 1 and inverted:
-                xAxiesVal, yAxiesVal = self.prebGraphData( start, amp, num, flat_line, elevation=7.5, step=1, oscillation=[1,-0.5])
+                xAxiesVal, yAxiesVal = self.prebGraphData(
+                    start, amp, num, flat_line, elevation=7.5, step=1, oscillation=[1, -0.5])
                 yAxiesVal[0], yAxiesVal[-1] = 7.5, 7.5
             else:
                 xAxiesVal, yAxiesVal = self.prebGraphData(
                     start, amp, num, square_wave, elevation=7.5, step=1)
-                
+
             if spinEcho:
-                xAxiesValToBeAppend, yAxiesValToBeAppend = self.prebGraphData(start+3, amp, 1, square_wave, elevation=7.5, step=1)
+                xAxiesValToBeAppend, yAxiesValToBeAppend = self.prebGraphData(
+                    start+3, amp, 1, square_wave, elevation=7.5, step=1)
                 xAxiesVal.extend(xAxiesValToBeAppend)
                 yAxiesVal.extend(yAxiesValToBeAppend)
 
@@ -934,23 +955,23 @@ class MainWindow(QtWidgets.QMainWindow):
     def plot_Gfe(self, start, amp, num=1, step=1, inverted=False, SpinEcho=False):
         try:
             if num > 1 and inverted:
-                xAxiesVal, yAxiesVal = self.prebGraphData( start, amp, num, flat_line, elevation=2.5, step=1, oscillation=[-0.5,1])
+                xAxiesVal, yAxiesVal = self.prebGraphData(
+                    start, amp, num, flat_line, elevation=2.5, step=1, oscillation=[-0.5, 1])
                 yAxiesVal[0], yAxiesVal[-1] = 2.5, 2.5
             else:
                 xAxiesVal, yAxiesVal = self.prebGraphData(
                     start, amp, num, square_wave, elevation=2.5, step=step)
-                
+
             if SpinEcho:
                 yAxiesVal[-1] = 3.5
-                xAxiesValToBeAppend, yAxiesValToBeAppend = self.prebGraphData(8.5, amp, 1, flat_line, elevation=2.5)
+                xAxiesValToBeAppend, yAxiesValToBeAppend = self.prebGraphData(
+                    8.5, amp, 1, flat_line, elevation=2.5)
                 xAxiesVal.extend(xAxiesValToBeAppend)
                 yAxiesVal.extend(yAxiesValToBeAppend)
                 yAxiesVal[-1] = 2.5
 
-
             self.GFEplotter.setData(xAxiesVal, yAxiesVal)
 
-            
         except Exception as e:
             print(e)
 
@@ -986,14 +1007,14 @@ class MainWindow(QtWidgets.QMainWindow):
             self.plot_Rf(1.0, 1.0)
             self.plot_Gss(1.0, 1.0, 2, True)
             self.plot_Gpe(2, 1.0)
-            self.plot_Gfe(2, 1.0, 2,inverted=True)
+            self.plot_Gfe(2, 1.0, 2, inverted=True)
             self.plot_RO(3, 1.0)
         except Exception as e:
             print(e)
 
     def plot_SE_sequence(self):
-        try: 
-            self.plot_Rf(1.0, [0.5, 1.0], 2)
+        try:
+            self.plot_Rf(1.0, [0.5, 1.0], 2, "90°", "180°")
             self.plot_Gss(1.0, 1.0, 2, True, True)
             self.plot_Gpe(2.5, 1.0)
             self.plot_Gfe(2.5, 1.0, 2, step=5, SpinEcho=True)
@@ -1006,7 +1027,7 @@ class MainWindow(QtWidgets.QMainWindow):
             if self.ui.comboBox_4.currentText() == "GRE":
                 self.plot_GRE_sequence()
             elif self.ui.comboBox_4.currentText() == "SpinEcho":
-                self.plot_spin_echo_sequence()
+                self.plot_SE_sequence()
             elif self.ui.comboBox_4.currentText() == "SSFP":
                 self.plot_FLASH_sequence()
 
