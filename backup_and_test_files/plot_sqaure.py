@@ -84,6 +84,22 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # self.plotter_3.setData(t, set_square_wave_place(300,square_wave(1,100))
 
+    def prebGraphData(self, start, amp, num=1, function=half_sin_wave, repPerPlace=1, elevation=0, step=1, oscillation=False):
+        try:
+            yAxiesVal = []
+            xAxiesVal = []
+
+            for j in range(int(num)):
+                for i in np.linspace(1, -1, repPerPlace):
+                    yAxiesVal.extend(elevation + (function(amp) * i * np.power(-1, j)) if oscillation else elevation + (function(amp) * i))
+                    xAxiesVal.extend(np.arange(start, start + 1, 1/100))
+                start += step
+
+            return [xAxiesVal, yAxiesVal]
+        except Exception as e:
+            print(e)
+        
+
     def plot_Rf(self, start, amp, num=1):
         yAxiesVal = []
         xAxiesVal = []
