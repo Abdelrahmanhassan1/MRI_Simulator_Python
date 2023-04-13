@@ -16,8 +16,10 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from ui_mainWindow import Ui_MainWindow
 
+
 def flat_line(Amp, NumOfPoints=100):
     return np.full(NumOfPoints, Amp)
+
 
 def square_wave(Amp, NumOfPoints=100):
     arr = np.full(NumOfPoints, Amp)
@@ -972,13 +974,22 @@ class MainWindow(QtWidgets.QMainWindow):
         except Exception as e:
             print(e)
 
+    def plot_spin_echo_sequence(self):
+        try:
+            self.plot_Rf(1.0, 1.0, 2)
+            self.plot_Gss(1.0, 1.0, 2, True)
+            self.plot_Gpe(2, 1.0)
+            self.plot_Gfe(2, 1.0, 2, True)
+            self.plot_RO(3, 1.0)
+        except Exception as e:
+            print(e)
+
     def plot_chosen_sequence(self):
         try:
             if self.ui.comboBox_4.currentText() == "GRE":
-                print("GRE")
                 self.plot_GRE_sequence()
             elif self.ui.comboBox_4.currentText() == "SpinEcho":
-                self.plot_SE_sequence()
+                self.plot_spin_echo_sequence()
             elif self.ui.comboBox_4.currentText() == "SSFP":
                 self.plot_FLASH_sequence()
 
