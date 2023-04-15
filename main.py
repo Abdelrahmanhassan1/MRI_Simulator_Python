@@ -58,6 +58,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.lineEdit.setValidator(QIntValidator())
 
         # phantom image
+        self.xAxiesVal = []
+        self.yAxiesVal = []
         self.prev_x = 0
         self.prev_y = 0
         self.new_3D_matrix_image = None
@@ -131,6 +133,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.pushButton_3.released.connect(self.reset_phantom_to_original)
 
         self.ui.pushButton.released.connect(self.plot_chosen_sequence)
+        self.ui.pushButton_4.released.connect(self.plot_chosen_prep_pulse)
 
     @ QtCore.pyqtSlot()
     def show_image_on_label(self, image_path, image=None):
@@ -863,8 +866,22 @@ class MainWindow(QtWidgets.QMainWindow):
         except Exception as e:
             print(e)
 
-    def plot_Rf(self, start, amp, num=1, text1="", text2=""):
+    def plot_Rf(self, start, amp, num=1, text1="", text2="", type_of_pulse=""):
         try:
+            # if it is preparation pulses
+            if type_of_pulse == "prep_t1":
+                xAxiesVal, yAxiesVal = self.prebGraphData(
+                    start, amp, num, half_sin_wave, elevation=10, step=5)
+
+                prep_t1_text = pg.TextItem("180°", anchor=(0, 0))
+                prep_t1_text.setPos(
+                    xAxiesVal[0] + 0.1, 11.3)
+                self.ui.signalPlot.addItem(prep_t1_text)
+
+                self.RFplotter.setData(xAxiesVal, yAxiesVal)
+
+                return
+
             if type(amp) == list:
                 xAxiesVal90deg, yAxiesVal90deg = self.prebGraphData(
                     start, amp[0], 1, half_sin_wave, elevation=10)
@@ -876,50 +893,33 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 self.RFplotter.setData(xAxiesVal, yAxiesVal)
 
-                T1_text = pg.TextItem(
+                self.T1_text = pg.TextItem(
                     text=text1, anchor=(0, 0))
 
-                T1_text.setPos(
+                self.T1_text.setPos(
                     1.2, 11)
 
-                T2_text = pg.TextItem(
+                self.T2_text = pg.TextItem(
                     text=text2, anchor=(0, 0))
 
-                T2_text.setPos(
+                self.T2_text.setPos(
                     4.2, 11.5)
 
-                self.ui.signalPlot.addItem(T1_text)
-                self.ui.signalPlot.addItem(T2_text)
+                self.ui.signalPlot.addItem(self.T1_text)
+                self.ui.signalPlot.addItem(self.T2_text)
 
                 return
 
             xAxiesVal, yAxiesVal = self.prebGraphData(
                 start, amp, num, half_sin_wave, elevation=10, step=5)
+
             self.RFplotter.setData(xAxiesVal, yAxiesVal)
 
-            self.starting_TR_postion = xAxiesVal[50]
-            self.startingTR_plotter.setData(
-                np.repeat(self.starting_TR_postion, 50), np.linspace(-0.5, 11.5, 50))
+            if hasattr(self, 'T1_text'):
+                self.ui.signalPlot.removeItem(self.T1_text)
 
-            if num > 1:
-                self.ending_TR_postion = xAxiesVal[150]
-
-                self.endingTR_plotter.setData(
-                    np.repeat(self.ending_TR_postion, 50), np.linspace(10, 11.5, 50))
-                self.TR_horizontal_line.setData(np.linspace(
-                    self.starting_TR_postion, self.ending_TR_postion, 50), np.repeat(11.3, 50))
-
-                if hasattr(self, 'TR_text'):
-                    self.ui.signalPlot.removeItem(self.TR_text)
-
-                center = (self.starting_TR_postion + self.ending_TR_postion)
-
-                self.TR_text = pg.TextItem(
-                    text=f"TR= {np.round(center,2)} ms", anchor=(0, 0))
-
-                self.TR_text.setPos(
-                    self.starting_TR_postion + center / 5, 11.3)
-                self.ui.signalPlot.addItem(self.TR_text)
+            if hasattr(self, 'T2_text'):
+                self.ui.signalPlot.removeItem(self.T2_text)
 
         except Exception as e:
             print(e)
@@ -981,23 +981,23 @@ class MainWindow(QtWidgets.QMainWindow):
                 start, amp, num, half_sin_wave)
             self.ROplotter.setData(xAxiesVal, yAxiesVal)
 
-            self.TE_postion = xAxiesVal[50]
-            self.TE_plotter.setData(np.repeat(self.TE_postion, 50),
-                                    np.linspace(-0.5, 1, 50))
-            self.TE_horizontal_line.setData(np.linspace(self.starting_TR_postion, self.TE_postion, 50),
-                                            np.repeat(-0.5, 50))
+            # self.TE_postion = xAxiesVal[50]
+            # self.TE_plotter.setData(np.repeat(self.TE_postion, 50),
+            #                         np.linspace(-0.5, 1, 50))
+            # self.TE_horizontal_line.setData(np.linspace(self.starting_TR_postion, self.TE_postion, 50),
+            #                                 np.repeat(-0.5, 50))
 
-            if hasattr(self, 'TE_text'):
-                self.ui.signalPlot.removeItem(self.TE_text)
+            # if hasattr(self, 'TE_text'):
+            #     self.ui.signalPlot.removeItem(self.TE_text)
 
-            center = (self.TE_postion - self.starting_TR_postion)
+            # center = (self.TE_postion - self.starting_TR_postion)
 
-            self.TE_text = pg.TextItem(
-                text=f"TE= {np.round(center,2)} ms", anchor=(0, 0))
+            # self.TE_text = pg.TextItem(
+            #     text=f"TE= {np.round(center,2)} ms", anchor=(0, 0))
 
-            self.TE_text.setPos(self.starting_TR_postion + 0.2, -0.6)
+            # self.TE_text.setPos(self.starting_TR_postion + 0.2, -0.6)
 
-            self.ui.signalPlot.addItem(self.TE_text)
+            # self.ui.signalPlot.addItem(self.TE_text)
 
         except Exception as e:
             print(e)
@@ -1007,7 +1007,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.plot_Rf(1.0, 1.0)
             self.plot_Gss(1.0, 1.0, 2, True)
             self.plot_Gpe(2, 1.0)
-            self.plot_Gfe(2, 1.0, 2, inverted=True)
+            self.plot_Gfe(2, 1.0, 2, True)
             self.plot_RO(3, 1.0)
         except Exception as e:
             print(e)
@@ -1030,6 +1030,20 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.plot_SE_sequence()
             elif self.ui.comboBox_4.currentText() == "SSFP":
                 self.plot_FLASH_sequence()
+
+        except Exception as e:
+            print(e)
+
+    def plot_T1_prep(self):
+        try:
+            self.plot_Rf(-1, 2.0, type_of_pulse="prep_t1")
+        except Exception as e:
+            print(e)
+
+    def plot_chosen_prep_pulse(self):
+        try:
+            if self.ui.comboBox_5.currentText() == "IR (T1-Prep)":
+                self.plot_T1_prep()
 
         except Exception as e:
             print(e)
