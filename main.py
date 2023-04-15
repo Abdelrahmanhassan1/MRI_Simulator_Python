@@ -828,11 +828,22 @@ class MainWindow(QtWidgets.QMainWindow):
         try:
             # get the values from the dictionary
             self.data = json.load(open(self.fileName[0]))
+            self.cleanGraphs() 
             self.data_plotter(self.RFplotter, *self.data['RF'], half_sin_wave, 10)
             self.data_plotter(self.GSSplotter, *self.data['GSS'], square_wave, 7.5)
             self.data_plotter(self.GPEplotter, *self.data['GPE'], square_wave, 5, 5)
             self.data_plotter(self.GFEplotter, *self.data['GFE'], square_wave, 2.5)
             self.data_plotter(self.ROplotter, *self.data['RO'], half_sin_wave, 0)
+        except Exception as e:
+            print(e)
+
+    def cleanGraphs(self):
+        try:
+            self.RFplotter.clear()
+            self.GSSplotter.clear()
+            self.GPEplotter.clear()
+            self.GFEplotter.clear()
+            self.ROplotter.clear()
         except Exception as e:
             print(e)
 
@@ -854,7 +865,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                                abs(100 * oscillation[j]))):]
                             del xAxiesVal[-int((100 -
                                                abs(100 * oscillation[j]))):]
-                            # modifiy the start based on the number of points deleted
+                            # modifiy the start based on the number of points deleted if it is not in place
                             start += -abs(oscillation[j])
                     else:
                         yAxiesVal.extend(elevation + (function(amp) * i * np.power(-1, j))
@@ -870,10 +881,10 @@ class MainWindow(QtWidgets.QMainWindow):
         xAxiesVal, yAxiesVal = self.prebGraphData(start, amp, num, function, repPerPlace=repPerPlace, elevation=elevation, oscillation=oscillation)
 
         if leftLine:
-            yAxiesVal[0] = 10
+            yAxiesVal[0] = elevation
         
         if rightLine:
-            yAxiesVal[-1] = 10
+            yAxiesVal[-1] = elevation
         
         plotter.setData(xAxiesVal, yAxiesVal)
 
@@ -887,10 +898,10 @@ class MainWindow(QtWidgets.QMainWindow):
         xAxiesVal, yAxiesVal = self.prebGraphData(start, amp, num, function, repPerPlace=repPerPlace, elevation=elevation, oscillation=oscillation)
 
         if leftLine:
-            yAxiesVal[0] = 10
+            yAxiesVal[0] = elevation
         
         if rightLine:
-            yAxiesVal[-1] = 10
+            yAxiesVal[-1] = elevation
 
 
         if start <= minXVal - 1: 
@@ -906,8 +917,23 @@ class MainWindow(QtWidgets.QMainWindow):
         
 
     def plot_GRE_sequence(self):
-        self.plot_appender(self.RFplotter, 3, 1, square_wave, 10, repPerPlace=5)
-        self.plot_appender(self.RFplotter, -2, 1, flat_line, 10, oscillation=[1,-0.5], num=2, leftLine=True, rightLine=True)
+        self.cleanGraphs()
+        
+        self.data_plotter(self.RFplotter, 1, 1, 1, half_sin_wave, 10)
+
+        self.data_plotter(self.GSSplotter, 1, 1, 2, flat_line, 7.5, oscillation=[1,-0.5], leftLine=True, rightLine=True)
+        self.plot_appender(self.GSSplotter, 4.5, 1, square_wave, 7.5, 5)
+
+        self.data_plotter(self.GPEplotter, 2, 1, 1, flat_line, 5, oscillation=[0.5], leftLine=True, rightLine=True)
+        self.plot_appender(self.GPEplotter, 2, 0.5, flat_line, 5, oscillation=[0.5], leftLine=True, rightLine=True)
+        self.plot_appender(self.GPEplotter, 2, 0, flat_line, 5, oscillation=[0.5], leftLine=True, rightLine=True)
+        self.plot_appender(self.GPEplotter, 2, -0.5, flat_line, 5, oscillation=[0.5], leftLine=True, rightLine=True)
+        self.plot_appender(self.GPEplotter, 2, -1, flat_line, 5, oscillation=[0.5], leftLine=True, rightLine=True)
+
+        self.data_plotter(self.GFEplotter, 2, 1, 2, flat_line, 2.5, oscillation=[-0.5, 1], leftLine=True)
+        self.plot_appender(self.GFEplotter, 3.5, 1, flat_line, 2.5, rightLine=True)
+        
+        self.data_plotter(self.ROplotter, 3, 1, 1, half_sin_wave, 0)
 
     def plot_chosen_sequence(self):
         try:
