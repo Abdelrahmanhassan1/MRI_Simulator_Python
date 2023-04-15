@@ -828,11 +828,11 @@ class MainWindow(QtWidgets.QMainWindow):
         try:
             # get the values from the dictionary
             self.data = json.load(open(self.fileName[0]))
-            self.plot_Rf(*self.data['RF'])
-            self.plot_Gss(*self.data['GSS'])
-            self.plot_Gpe(*self.data['GPE'])
-            self.plot_Gfe(*self.data['GFE'])
-            self.plot_RO(*self.data['RO'])
+            self.data_plotter(self.RFplotter, *self.data['RF'], half_sin_wave, 10)
+            self.data_plotter(self.GSSplotter, *self.data['GSS'], square_wave, 7.5)
+            self.data_plotter(self.GPEplotter, *self.data['GPE'], square_wave, 5, 5)
+            self.data_plotter(self.GFEplotter, *self.data['GFE'], square_wave, 2.5)
+            self.data_plotter(self.ROplotter, *self.data['RO'], half_sin_wave, 0)
         except Exception as e:
             print(e)
 
@@ -866,161 +866,48 @@ class MainWindow(QtWidgets.QMainWindow):
         except Exception as e:
             print(e)
 
-    def plot_Rf(self, start, amp, num=1, text1="", text2="", type_of_pulse=""):
-        try:
-            # if it is preparation pulses
-            if type_of_pulse == "prep_t1":
-                xAxiesVal, yAxiesVal = self.prebGraphData(
-                    start, amp, num, half_sin_wave, elevation=10, step=5)
+    def data_plotter(self, plotter, start, amp, num, function, elevation, repPerPlace=1, leftLine=False, rightLine=False, oscillation=False):
+        xAxiesVal, yAxiesVal = self.prebGraphData(start, amp, num, function, repPerPlace=repPerPlace, elevation=elevation, oscillation=oscillation)
 
-                prep_t1_text = pg.TextItem("180°", anchor=(0, 0))
-                prep_t1_text.setPos(
-                    xAxiesVal[0] + 0.1, 11.3)
-                self.ui.signalPlot.addItem(prep_t1_text)
+        if leftLine:
+            yAxiesVal[0] = 10
+        
+        if rightLine:
+            yAxiesVal[-1] = 10
+        
+        plotter.setData(xAxiesVal, yAxiesVal)
 
-                self.RFplotter.setData(xAxiesVal, yAxiesVal)
+        
+    def plot_appender(self, plotter, start, amp, function, elevation, repPerPlace=1, leftLine=False, rightLine=False, oscillation=False, num=1):
+        originalXAxiesData, originalYAxiesData = plotter.getData()
 
-                return
+        minXVal = np.min(originalXAxiesData)
+        maxXVal = np.max(originalXAxiesData)
 
-            if type(amp) == list:
-                xAxiesVal90deg, yAxiesVal90deg = self.prebGraphData(
-                    start, amp[0], 1, half_sin_wave, elevation=10)
-                xAxiesVal180deg, yAxiesVal180deg = self.prebGraphData(
-                    start + 3, amp[1], 1, half_sin_wave, elevation=10)
+        xAxiesVal, yAxiesVal = self.prebGraphData(start, amp, num, function, repPerPlace=repPerPlace, elevation=elevation, oscillation=oscillation)
 
-                xAxiesVal = xAxiesVal90deg + xAxiesVal180deg
-                yAxiesVal = yAxiesVal90deg + yAxiesVal180deg
+        if leftLine:
+            yAxiesVal[0] = 10
+        
+        if rightLine:
+            yAxiesVal[-1] = 10
 
-                self.RFplotter.setData(xAxiesVal, yAxiesVal)
 
-                self.T1_text = pg.TextItem(
-                    text=text1, anchor=(0, 0))
+        if start <= minXVal - 1: 
+            originalXAxiesData = np.append(xAxiesVal, originalXAxiesData)
+            originalYAxiesData = np.append(yAxiesVal, originalYAxiesData)
+        else:
+            originalXAxiesData = np.append(originalXAxiesData, xAxiesVal)
+            originalYAxiesData = np.append(originalYAxiesData, yAxiesVal)
 
-                self.T1_text.setPos(
-                    1.2, 11)
+        plotter.setData(originalXAxiesData, originalYAxiesData)
 
-                self.T2_text = pg.TextItem(
-                    text=text2, anchor=(0, 0))
-
-                self.T2_text.setPos(
-                    4.2, 11.5)
-
-                self.ui.signalPlot.addItem(self.T1_text)
-                self.ui.signalPlot.addItem(self.T2_text)
-
-                return
-
-            xAxiesVal, yAxiesVal = self.prebGraphData(
-                start, amp, num, half_sin_wave, elevation=10, step=5)
-
-            self.RFplotter.setData(xAxiesVal, yAxiesVal)
-
-            if hasattr(self, 'T1_text'):
-                self.ui.signalPlot.removeItem(self.T1_text)
-
-            if hasattr(self, 'T2_text'):
-                self.ui.signalPlot.removeItem(self.T2_text)
-
-        except Exception as e:
-            print(e)
-
-    def plot_Gss(self, start, amp, num=1, inverted=False, spinEcho=False):
-        try:
-            if num > 1 and inverted:
-                xAxiesVal, yAxiesVal = self.prebGraphData(
-                    start, amp, num, flat_line, elevation=7.5, step=1, oscillation=[1, -0.5])
-                yAxiesVal[0], yAxiesVal[-1] = 7.5, 7.5
-            else:
-                xAxiesVal, yAxiesVal = self.prebGraphData(
-                    start, amp, num, square_wave, elevation=7.5, step=1)
-
-            if spinEcho:
-                xAxiesValToBeAppend, yAxiesValToBeAppend = self.prebGraphData(
-                    start+3, amp, 1, square_wave, elevation=7.5, step=1)
-                xAxiesVal.extend(xAxiesValToBeAppend)
-                yAxiesVal.extend(yAxiesValToBeAppend)
-
-            self.GSSplotter.setData(xAxiesVal, yAxiesVal)
-        except Exception as e:
-            print(e)
-
-    def plot_Gpe(self, start, amp, num=1):
-        try:
-            xAxiesVal, yAxiesVal = self.prebGraphData(
-                start, amp, num, square_wave, repPerPlace=5, elevation=5, step=2)
-            self.GPEplotter.setData(xAxiesVal, yAxiesVal)
-        except Exception as e:
-            print(e)
-
-    def plot_Gfe(self, start, amp, num=1, step=1, inverted=False, SpinEcho=False):
-        try:
-            if num > 1 and inverted:
-                xAxiesVal, yAxiesVal = self.prebGraphData(
-                    start, amp, num, flat_line, elevation=2.5, step=1, oscillation=[-0.5, 1])
-                yAxiesVal[0], yAxiesVal[-1] = 2.5, 2.5
-            else:
-                xAxiesVal, yAxiesVal = self.prebGraphData(
-                    start, amp, num, square_wave, elevation=2.5, step=step)
-
-            if SpinEcho:
-                yAxiesVal[-1] = 3.5
-                xAxiesValToBeAppend, yAxiesValToBeAppend = self.prebGraphData(
-                    8.5, amp, 1, flat_line, elevation=2.5)
-                xAxiesVal.extend(xAxiesValToBeAppend)
-                yAxiesVal.extend(yAxiesValToBeAppend)
-                yAxiesVal[-1] = 2.5
-
-            self.GFEplotter.setData(xAxiesVal, yAxiesVal)
-
-        except Exception as e:
-            print(e)
-
-    def plot_RO(self, start, amp, num=1):
-        try:
-            xAxiesVal, yAxiesVal = self.prebGraphData(
-                start, amp, num, half_sin_wave)
-            self.ROplotter.setData(xAxiesVal, yAxiesVal)
-
-            # self.TE_postion = xAxiesVal[50]
-            # self.TE_plotter.setData(np.repeat(self.TE_postion, 50),
-            #                         np.linspace(-0.5, 1, 50))
-            # self.TE_horizontal_line.setData(np.linspace(self.starting_TR_postion, self.TE_postion, 50),
-            #                                 np.repeat(-0.5, 50))
-
-            # if hasattr(self, 'TE_text'):
-            #     self.ui.signalPlot.removeItem(self.TE_text)
-
-            # center = (self.TE_postion - self.starting_TR_postion)
-
-            # self.TE_text = pg.TextItem(
-            #     text=f"TE= {np.round(center,2)} ms", anchor=(0, 0))
-
-            # self.TE_text.setPos(self.starting_TR_postion + 0.2, -0.6)
-
-            # self.ui.signalPlot.addItem(self.TE_text)
-
-        except Exception as e:
-            print(e)
+        
+        
 
     def plot_GRE_sequence(self):
-        try:
-            self.plot_Rf(1.0, 1.0)
-            self.plot_Gss(1.0, 1.0, 2, True)
-            self.plot_Gpe(2, 1.0)
-            self.plot_Gfe(2, 1.0, 2, True)
-            self.plot_RO(3, 1.0)
-        except Exception as e:
-            print(e)
-
-    def plot_SE_sequence(self):
-        try:
-            self.plot_Rf(1.0, [0.5, 1.0], 2, "90°", "180°")
-            self.plot_Gss(1.0, 1.0, 2, True, True)
-            self.plot_Gpe(2.5, 1.0)
-            self.plot_Gfe(2.5, 1.0, 2, step=5, SpinEcho=True)
-            self.plot_RO(8, 1.0)
-        except Exception as e:
-            print(e)
+        self.plot_appender(self.RFplotter, 3, 1, square_wave, 10, repPerPlace=5)
+        self.plot_appender(self.RFplotter, -2, 1, flat_line, 10, oscillation=[1,-0.5], num=2, leftLine=True, rightLine=True)
 
     def plot_chosen_sequence(self):
         try:
