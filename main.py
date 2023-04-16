@@ -946,7 +946,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.text_cleaner()
 
             # RF pulse
-            self.data_plotter(self.RFplotter, 1, 1, 1, half_sin_wave, 10)
+            self.data_plotter(self.RFplotter, 1, 0.5, 1, half_sin_wave, 10)
 
             # GSS pulse
             self.data_plotter(self.GSSplotter, 1, 1, 2, flat_line, 7.5, oscillation=[
@@ -1084,14 +1084,78 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def plot_T1_prep(self):
         try:
-            pass
+            self.plot_chosen_sequence()
+
+            # RF pulse
+            self.plot_appender(self.RFplotter, -2, 1, half_sin_wave, 10)
+
+            self.text_plotter("180°", -1.8, 10.5)
+
+            self.plot_prep_and_aquisition_titles()
+        except Exception as e:
+            print(e)
+
+    def plot_T2_prep(self):
+        try:
+            self.plot_chosen_sequence()
+
+            # RF pulse
+            self.plot_appender(self.RFplotter, -4, 1, half_sin_wave, 10)
+            self.plot_appender(self.RFplotter, -2, 1, half_sin_wave, 10)
+
+            self.text_plotter("90°", -3.8, 10.5)
+            self.text_plotter("-90°", -1.8, 10.5)
+
+            self.plot_prep_and_aquisition_titles()
+        except Exception as e:
+            print(e)
+
+    def plot_tagging_prep(self):
+        try:
+            self.plot_chosen_sequence()
+
+            # RF pulse
+            self.plot_appender(self.RFplotter, -5, 1, half_sin_wave, 10)
+            self.plot_appender(self.RFplotter, -3, 1, half_sin_wave, 10)
+
+            # GFE pulse
+            self.plot_appender(self.GFEplotter, -4, 1,
+                               flat_line, 2.5, leftLine=True, rightLine=True)
+            self.plot_appender(self.GFEplotter, -2, 1,
+                               flat_line, 2.5, leftLine=True, rightLine=True)
+
+            self.text_plotter("90°", -4.8, 10.5)
+            self.text_plotter("-90°", -2.8, 10.5)
+
+            self.text_plotter("Spoiler Gradient", -2.5, 4)
+
+            self.plot_prep_and_aquisition_titles()
+
         except Exception as e:
             print(e)
 
     def plot_chosen_prep_pulse(self):
         try:
-            if self.ui.comboBox_5.currentText() == "IR (T1-Prep)":
-                self.plot_T1_prep()
+            if self.ui.comboBox_5.currentIndex() == 0:
+                return
+            x, _ = self.RFplotter.getData()
+            if len(x) > 0:
+                if self.ui.comboBox_5.currentText() == "IR (T1-Prep)":
+                    self.plot_T1_prep()
+                elif self.ui.comboBox_5.currentText() == "T2-Prep":
+                    self.plot_T2_prep()
+                elif self.ui.comboBox_5.currentText() == "Tagging Sequence":
+                    self.plot_tagging_prep()
+            else:
+                self.popUpErrorMsg(
+                    "Error", "You must choose a sequence first")
+        except TypeError:
+            self.popUpErrorMsg("Error", "You must choose a sequence first")
+
+    def plot_prep_and_aquisition_titles(self):
+        try:
+            self.text_plotter("Preparation Pulse", -3, 12.5)
+            self.text_plotter("Aquisition System", 2, 12.5)
 
         except Exception as e:
             print(e)
