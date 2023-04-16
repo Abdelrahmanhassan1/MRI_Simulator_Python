@@ -828,12 +828,17 @@ class MainWindow(QtWidgets.QMainWindow):
         try:
             # get the values from the dictionary
             self.data = json.load(open(self.fileName[0]))
-            self.cleanGraphs() 
-            self.data_plotter(self.RFplotter, *self.data['RF'], half_sin_wave, 10)
-            self.data_plotter(self.GSSplotter, *self.data['GSS'], square_wave, 7.5)
-            self.data_plotter(self.GPEplotter, *self.data['GPE'], square_wave, 5, 5)
-            self.data_plotter(self.GFEplotter, *self.data['GFE'], square_wave, 2.5)
-            self.data_plotter(self.ROplotter, *self.data['RO'], half_sin_wave, 0)
+            self.cleanGraphs()
+            self.data_plotter(self.RFplotter, *
+                              self.data['RF'], half_sin_wave, 10)
+            self.data_plotter(self.GSSplotter, *
+                              self.data['GSS'], square_wave, 7.5)
+            self.data_plotter(self.GPEplotter, *
+                              self.data['GPE'], square_wave, 5, 5)
+            self.data_plotter(self.GFEplotter, *
+                              self.data['GFE'], square_wave, 2.5)
+            self.data_plotter(self.ROplotter, *
+                              self.data['RO'], half_sin_wave, 0)
         except Exception as e:
             print(e)
 
@@ -878,62 +883,192 @@ class MainWindow(QtWidgets.QMainWindow):
             print(e)
 
     def data_plotter(self, plotter, start, amp, num, function, elevation, repPerPlace=1, leftLine=False, rightLine=False, oscillation=False):
-        xAxiesVal, yAxiesVal = self.prebGraphData(start, amp, num, function, repPerPlace=repPerPlace, elevation=elevation, oscillation=oscillation)
+        try:
+            xAxiesVal, yAxiesVal = self.prebGraphData(
+                start, amp, num, function, repPerPlace=repPerPlace, elevation=elevation, oscillation=oscillation)
 
-        if leftLine:
-            yAxiesVal[0] = elevation
-        
-        if rightLine:
-            yAxiesVal[-1] = elevation
-        
-        plotter.setData(xAxiesVal, yAxiesVal)
+            if leftLine:
+                yAxiesVal[0] = elevation
 
-        
+            if rightLine:
+                yAxiesVal[-1] = elevation
+
+            plotter.setData(xAxiesVal, yAxiesVal)
+        except Exception as e:
+            print(e)
+
     def plot_appender(self, plotter, start, amp, function, elevation, repPerPlace=1, leftLine=False, rightLine=False, oscillation=False, num=1):
-        originalXAxiesData, originalYAxiesData = plotter.getData()
+        try:
+            originalXAxiesData, originalYAxiesData = plotter.getData()
 
-        minXVal = np.min(originalXAxiesData)
-        maxXVal = np.max(originalXAxiesData)
+            minXVal = np.min(originalXAxiesData)
+            maxXVal = np.max(originalXAxiesData)
 
-        xAxiesVal, yAxiesVal = self.prebGraphData(start, amp, num, function, repPerPlace=repPerPlace, elevation=elevation, oscillation=oscillation)
+            xAxiesVal, yAxiesVal = self.prebGraphData(
+                start, amp, num, function, repPerPlace=repPerPlace, elevation=elevation, oscillation=oscillation)
 
-        if leftLine:
-            yAxiesVal[0] = elevation
-        
-        if rightLine:
-            yAxiesVal[-1] = elevation
+            if leftLine:
+                yAxiesVal[0] = elevation
 
+            if rightLine:
+                yAxiesVal[-1] = elevation
 
-        if start <= minXVal - 1: 
-            originalXAxiesData = np.append(xAxiesVal, originalXAxiesData)
-            originalYAxiesData = np.append(yAxiesVal, originalYAxiesData)
-        else:
-            originalXAxiesData = np.append(originalXAxiesData, xAxiesVal)
-            originalYAxiesData = np.append(originalYAxiesData, yAxiesVal)
+            if start <= minXVal - 1:
+                originalXAxiesData = np.append(xAxiesVal, originalXAxiesData)
+                originalYAxiesData = np.append(yAxiesVal, originalYAxiesData)
+            else:
+                originalXAxiesData = np.append(originalXAxiesData, xAxiesVal)
+                originalYAxiesData = np.append(originalYAxiesData, yAxiesVal)
 
-        plotter.setData(originalXAxiesData, originalYAxiesData)
+            plotter.setData(originalXAxiesData, originalYAxiesData)
+        except Exception as e:
+            print(e)
 
-        
-        
+    def text_plotter(self, text, x, y):
+        try:
+            self.text1 = pg.TextItem(text, anchor=(0, 0))
+            self.text1.setPos(x, y)
+            self.ui.signalPlot.addItem(self.text1)
+        except Exception as e:
+            print(e)
+
+    def text_cleaner(self):
+        try:
+            for item in self.ui.signalPlot.items():
+                if isinstance(item, pg.TextItem):
+                    self.ui.signalPlot.removeItem(item)
+        except Exception as e:
+            print(e)
 
     def plot_GRE_sequence(self):
-        self.cleanGraphs()
-        
-        self.data_plotter(self.RFplotter, 1, 1, 1, half_sin_wave, 10)
+        try:
+            self.cleanGraphs()
+            self.text_cleaner()
 
-        self.data_plotter(self.GSSplotter, 1, 1, 2, flat_line, 7.5, oscillation=[1,-0.5], leftLine=True, rightLine=True)
-        self.plot_appender(self.GSSplotter, 4.5, 1, square_wave, 7.5, 5)
+            # RF pulse
+            self.data_plotter(self.RFplotter, 1, 1, 1, half_sin_wave, 10)
 
-        self.data_plotter(self.GPEplotter, 2, 1, 1, flat_line, 5, oscillation=[0.5], leftLine=True, rightLine=True)
-        self.plot_appender(self.GPEplotter, 2, 0.5, flat_line, 5, oscillation=[0.5], leftLine=True, rightLine=True)
-        self.plot_appender(self.GPEplotter, 2, 0, flat_line, 5, oscillation=[0.5], leftLine=True, rightLine=True)
-        self.plot_appender(self.GPEplotter, 2, -0.5, flat_line, 5, oscillation=[0.5], leftLine=True, rightLine=True)
-        self.plot_appender(self.GPEplotter, 2, -1, flat_line, 5, oscillation=[0.5], leftLine=True, rightLine=True)
+            # GSS pulse
+            self.data_plotter(self.GSSplotter, 1, 1, 2, flat_line, 7.5, oscillation=[
+                1, -0.5], leftLine=True, rightLine=True)
+            self.plot_appender(self.GSSplotter, 5, 1, square_wave, 7.5, 5)
+            self.text_plotter("Spoiling Gradient", 4.5, 9)
 
-        self.data_plotter(self.GFEplotter, 2, 1, 2, flat_line, 2.5, oscillation=[-0.5, 1], leftLine=True)
-        self.plot_appender(self.GFEplotter, 3.5, 1, flat_line, 2.5, rightLine=True)
-        
-        self.data_plotter(self.ROplotter, 3, 1, 1, half_sin_wave, 0)
+            # GPE pulse
+            self.data_plotter(self.GPEplotter, 2, 1, 1, flat_line, 5, oscillation=[
+                0.5], leftLine=True, rightLine=True)
+            self.plot_appender(self.GPEplotter, 2, 0.5, flat_line, 5, oscillation=[
+                0.5], leftLine=True, rightLine=True)
+            self.plot_appender(self.GPEplotter, 2, 0, flat_line, 5, oscillation=[
+                0.5], leftLine=True, rightLine=True)
+            self.plot_appender(self.GPEplotter, 2, -0.5, flat_line,
+                               5, oscillation=[0.5], leftLine=True, rightLine=True)
+            self.plot_appender(self.GPEplotter, 2, -1, flat_line,
+                               5, oscillation=[0.5], leftLine=True, rightLine=True)
+
+            # GFE pulse
+            self.data_plotter(self.GFEplotter, 2, 1, 2, flat_line,
+                              2.5, oscillation=[-0.5, 1], leftLine=True)
+            self.plot_appender(self.GFEplotter, 3.5, 1,
+                               flat_line, 2.5, rightLine=True)
+
+            # RO pulse
+            self.data_plotter(self.ROplotter, 3, 1, 1, half_sin_wave, 0)
+
+        except Exception as e:
+            print(e)
+
+    def plot_SE_sequence(self):
+        try:
+            self.cleanGraphs()
+            self.text_cleaner()
+
+            # RF pulse
+            self.data_plotter(self.RFplotter, 1, 0.5, 1, half_sin_wave, 10)
+            self.plot_appender(self.RFplotter, 4.5, 1, half_sin_wave, 10)
+            self.text_plotter("90°", 1.5, 10.5)
+            self.text_plotter("180°", 4.7, 10.5)
+
+            # GSS pulse
+            self.data_plotter(self.GSSplotter, 1, 1, 2, flat_line, 7.5, oscillation=[
+                1, -0.5], leftLine=True, rightLine=True)
+            self.plot_appender(self.GSSplotter, 4.5, 1, square_wave, 7.5, 1)
+
+            # GPE pulse
+            self.data_plotter(self.GPEplotter, 3, 1, 1, flat_line, 5, oscillation=[
+                1], leftLine=True, rightLine=True)
+            self.plot_appender(self.GPEplotter, 3, 0.5, flat_line, 5, oscillation=[
+                1], leftLine=True, rightLine=True)
+            self.plot_appender(self.GPEplotter, 3, 0, flat_line, 5, oscillation=[
+                1], leftLine=True, rightLine=True)
+            self.plot_appender(self.GPEplotter, 3, -0.5, flat_line,
+                               5, oscillation=[1], leftLine=True, rightLine=True)
+            self.plot_appender(self.GPEplotter, 3, -1, flat_line,
+                               5, oscillation=[1], leftLine=True, rightLine=True)
+
+            # GFE pulse
+            self.data_plotter(self.GFEplotter, 3, 1, 1, flat_line,
+                              2.5, oscillation=[1], leftLine=True, rightLine=True)
+            self.plot_appender(self.GFEplotter, 7, 1,
+                               flat_line, 2.5, leftLine=True)
+            self.plot_appender(self.GFEplotter, 8, 1,
+                               flat_line, 2.5, rightLine=True)
+
+            self.data_plotter(self.ROplotter, 7.5, 1, 1, half_sin_wave, 0)
+        except Exception as e:
+            print(e)
+
+    def plot_SSFP_sequence(self):
+        try:
+            self.cleanGraphs()
+            self.text_cleaner()
+
+            # RF pulse
+            self.data_plotter(self.RFplotter, 1.5, 1, 1, half_sin_wave, 10)
+
+            # GSS pulse
+            self.data_plotter(self.GSSplotter, 1, 1, 3, flat_line, 7.5, oscillation=[
+                -0.5, 1, -0.5], leftLine=True, rightLine=True)
+
+            # GPE pulse
+            # first phase of the GPE pulse
+            self.data_plotter(self.GPEplotter, 3, 1, 1, flat_line, 5, oscillation=[
+                1], leftLine=True, rightLine=True)
+            self.plot_appender(self.GPEplotter, 3, 0.5, flat_line, 5, oscillation=[
+                1], leftLine=True, rightLine=True)
+            self.plot_appender(self.GPEplotter, 3, 0, flat_line, 5, oscillation=[
+                1], leftLine=True, rightLine=True)
+            self.plot_appender(self.GPEplotter, 3, -0.5, flat_line,
+                               5, oscillation=[1], leftLine=True, rightLine=True)
+            self.plot_appender(self.GPEplotter, 3, -1, flat_line,
+                               5, oscillation=[1], leftLine=True, rightLine=True)
+
+            # second phase of the GPE pulse
+            self.plot_appender(self.GPEplotter, 6, 1, flat_line, 5, oscillation=[
+                1], leftLine=True, rightLine=True)
+            self.plot_appender(self.GPEplotter, 6, 0.5, flat_line, 5, oscillation=[
+                1], leftLine=True, rightLine=True)
+            self.plot_appender(self.GPEplotter, 6, 0, flat_line, 5, oscillation=[
+                1], leftLine=True, rightLine=True)
+            self.plot_appender(self.GPEplotter, 6, -0.5, flat_line,
+                               5, oscillation=[1], leftLine=True, rightLine=True)
+            self.plot_appender(self.GPEplotter, 6, -1, flat_line,
+                               5, oscillation=[1], leftLine=True, rightLine=True)
+
+            # GFE pulse
+            self.data_plotter(self.GFEplotter, 3, 1, 1, flat_line,
+                              2.5, oscillation=[-0.5], leftLine=True)
+            self.plot_appender(self.GFEplotter, 3.5, 1,
+                               flat_line, 2.5, oscillation=[-0.5],  rightLine=True)
+            self.plot_appender(self.GFEplotter, 4, 1,
+                               flat_line, 2.5, oscillation=[1, 1],  leftLine=True, num=2)
+            self.plot_appender(self.GFEplotter, 6, 1,
+                               flat_line, 2.5, oscillation=[-0.5, -0.5],  rightLine=True, num=2)
+
+            # readout pulse
+            self.data_plotter(self.ROplotter, 4.5, 1, 1, half_sin_wave, 0)
+        except Exception as e:
+            print(e)
 
     def plot_chosen_sequence(self):
         try:
@@ -942,14 +1077,14 @@ class MainWindow(QtWidgets.QMainWindow):
             elif self.ui.comboBox_4.currentText() == "SpinEcho":
                 self.plot_SE_sequence()
             elif self.ui.comboBox_4.currentText() == "SSFP":
-                self.plot_FLASH_sequence()
+                self.plot_SSFP_sequence()
 
         except Exception as e:
             print(e)
 
     def plot_T1_prep(self):
         try:
-            self.plot_Rf(-1, 2.0, type_of_pulse="prep_t1")
+            pass
         except Exception as e:
             print(e)
 
