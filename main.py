@@ -14,7 +14,7 @@ import heapq
 import qimage2ndarray
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
-from ui_mainWindow import Ui_MainWindow
+from mainWindow_ui import Ui_MainWindow
 
 
 def flat_line(Amp, NumOfPoints=100):
@@ -44,16 +44,27 @@ class MainWindow(QtWidgets.QMainWindow):
         self.prev_pos = None
         self.brightness_factor = 0
 
-        # kspace figure
+        # kspace figure 1
         self.kspace_figure = Figure()
         self.kspace_canvas = FigureCanvas(self.kspace_figure)
         self.ui.verticalLayout_9.addWidget(self.kspace_canvas)
 
-        # reconstructed image figure
+        # reconstructed image figure 1
         self.reconstructed_image_figure = Figure()
         self.reconstructed_image_canvas = FigureCanvas(
             self.reconstructed_image_figure)
         self.ui.verticalLayout_12.addWidget(self.reconstructed_image_canvas)
+
+        # kspace figure 2
+        self.kspace_figure_2 = Figure()
+        self.kspace_canvas_2 = FigureCanvas(self.kspace_figure_2)
+        self.ui.verticalLayout_17.addWidget(self.kspace_canvas_2)
+
+        # reconstructed image figure 2
+        self.reconstructed_image_figure_2 = Figure()
+        self.reconstructed_image_canvas_2 = FigureCanvas(
+            self.reconstructed_image_figure_2)
+        self.ui.verticalLayout_19.addWidget(self.reconstructed_image_canvas_2)
 
         self.ui.lineEdit.setValidator(QIntValidator())
 
@@ -134,6 +145,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.ui.pushButton.released.connect(self.plot_chosen_sequence)
         self.ui.pushButton_4.released.connect(self.plot_chosen_prep_pulse)
+
+        self.hideAllPrepParameters()
+        self.ui.comboBox_5.currentIndexChanged.connect(
+            self.handle_preparation_sequence_combo_box)
 
     @ QtCore.pyqtSlot()
     def show_image_on_label(self, image_path, image=None):
@@ -418,18 +433,34 @@ class MainWindow(QtWidgets.QMainWindow):
     # MRI Sequence
     def select_acquisition_system(self):
         try:
-            if self.ui.comboBox_3.currentIndex() == 0:
+            viewer_system = self.select_viewer_system()
+
+            if viewer_system == 1:
+                ComboBox = self.ui.comboBox_3
+            elif viewer_system == 2:
+                ComboBox = self.ui.comboBox_6
+
+            if ComboBox.currentIndex() == 0:
                 self.popUpErrorMsg(
                     "Error", "Please select an acquisition system")
                 return "Error"
-            elif self.ui.comboBox_3.currentIndex() == 1:
+            elif ComboBox.currentIndex() == 1:
                 self.create_cartesian_kspace()
-            elif self.ui.comboBox_3.currentIndex() == 2:
+            elif ComboBox.currentIndex() == 2:
                 self.create_spiral_kspace()
-            elif self.ui.comboBox_3.currentIndex() == 3:
+            elif ComboBox.currentIndex() == 3:
                 self.create_zig_zag_kspace()
-            elif self.ui.comboBox_3.currentIndex() == 4:
+            elif ComboBox.currentIndex() == 4:
                 self.create_radial_kspace()
+        except Exception as e:
+            print(e)
+
+    def select_viewer_system(self):
+        try:
+            if self.ui.comboBox_7.currentIndex() == 0:
+                return 1
+            elif self.ui.comboBox_7.currentIndex() == 1:
+                return 2
         except Exception as e:
             print(e)
 
@@ -715,6 +746,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def apply_rf_gradient_sequence(self):
         try:
+            viewer = self.select_viewer_system()
+
             if self.select_acquisition_system() == "Error":
                 return
             image_after_rf_pulse = self.apply_rf_pulse(self.phantom_image_resized,
@@ -766,8 +799,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 progress_percent = int(step_count / total_steps * 100)
                 self.ui.progressBar.setValue(progress_percent)
 
-                self.update_kspace(k_space)
-                self.update_image(k_space_2d)
+                self.update_kspace(k_space, viewer)
+                self.update_image(k_space_2d, viewer)
         except Exception as e:
             print(e)
 
@@ -778,28 +811,38 @@ class MainWindow(QtWidgets.QMainWindow):
                          [0, np.exp(-t / t2_value), 0],
                          [0, 0, (1 - np.exp(-t / t1_value))]])
 
-    def update_kspace(self, kspace):
+    def update_kspace(self, kspace, viewerIndex=1):
         try:
-            self.kspace_figure.clear()
-            axes = self.kspace_figure.gca()
+            if viewerIndex == 1:
+                Kfigure = self.kspace_figure
+
+            else:
+                Kfigure = self.kspace_figure_2
+
+            Kfigure.clear()
+            axes = Kfigure.gca()
             axes.set_xticks([])
             axes.set_yticks([])
             axes.xaxis.tick_top()
             axes.xaxis.set_label_text('Kx')
             axes.yaxis.set_label_text('Ky')
             axes.xaxis.set_label_position('top')
-
             axes.imshow(kspace, cmap='gray')
 
-            self.kspace_figure.canvas.draw()
-            self.kspace_figure.canvas.flush_events()
+            Kfigure.canvas.draw()
+            Kfigure.canvas.flush_events()
         except Exception as e:
             print(e)
 
-    def update_image(self, kspace_2d):
+    def update_image(self, kspace_2d, viewerIndex=1):
         try:
-            self.reconstructed_image_figure.clear()
-            axes = self.reconstructed_image_figure.gca()
+            if viewerIndex == 1:
+                Ifigure = self.reconstructed_image_figure
+            else:
+                Ifigure = self.reconstructed_image_figure_2
+
+            Ifigure.clear()
+            axes = Ifigure.gca()
             axes.set_xticks([])
             axes.set_yticks([])
 
@@ -807,13 +850,12 @@ class MainWindow(QtWidgets.QMainWindow):
             img = np.real(img).astype(np.uint8)
 
             axes.imshow(img, cmap='gray')
-            self.reconstructed_image_figure.canvas.draw()
-            self.reconstructed_image_figure.canvas.flush_events()
+            Ifigure.canvas.draw()
+            Ifigure.canvas.flush_events()
         except Exception as e:
             print(e)
 
     # sequence plotting
-
     def browseFile(self):
         try:
             # get jason file data and store it in a variable
@@ -1160,7 +1202,63 @@ class MainWindow(QtWidgets.QMainWindow):
         except Exception as e:
             print(e)
 
+    # preparation pulses parameters:
+    def handle_preparation_sequence_combo_box(self):
+        currentIndexofPrepSequence = self.ui.comboBox_5.currentIndex()
+        if currentIndexofPrepSequence == 0:
+            self.hideAllPrepParameters()
+        elif currentIndexofPrepSequence == 1:
+            self.T1_prep_parameters()
+        elif currentIndexofPrepSequence == 2:
+            self.T2_prep_parameters()
+        elif currentIndexofPrepSequence == 3:
+            self.tagging_prep_parameters()
+
+    def hideAllPrepParameters(self):
+        self.ui.label_25.hide()
+        self.ui.label_26.hide()
+        self.ui.label_27.hide()
+        self.ui.label_28.hide()
+        self.ui.lineEdit_2.hide()
+        self.ui.lineEdit_3.hide()
+        self.ui.lineEdit_4.hide()
+        self.ui.lineEdit_5.hide()
+
+    def T1_prep_parameters(self):
+        self.ui.label_26.hide()
+        self.ui.label_27.hide()
+        self.ui.label_28.hide()
+        self.ui.lineEdit_3.hide()
+        self.ui.lineEdit_4.hide()
+        self.ui.lineEdit_5.hide()
+
+        self.ui.label_25.show()
+        self.ui.lineEdit_2.show()
+
+    def T2_prep_parameters(self):
+        self.ui.label_25.hide()
+        self.ui.lineEdit_2.hide()
+        self.ui.label_27.hide()
+        self.ui.label_28.hide()
+        self.ui.lineEdit_4.hide()
+        self.ui.lineEdit_5.hide()
+
+        self.ui.label_26.show()
+        self.ui.lineEdit_3.show()
+
+    def tagging_prep_parameters(self):
+        self.ui.label_25.hide()
+        self.ui.lineEdit_2.hide()
+        self.ui.label_26.hide()
+        self.ui.lineEdit_3.hide()
+
+        self.ui.label_27.show()
+        self.ui.label_28.show()
+        self.ui.lineEdit_4.show()
+        self.ui.lineEdit_5.show()
+
     # assistive functions:
+
     def popUpErrorMsg(self, title, body):
         try:
             msgBox = QMessageBox()
