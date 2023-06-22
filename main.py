@@ -158,6 +158,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @ QtCore.pyqtSlot()
     def show_image_on_label(self, image_path, image=None):
+        """Show the image on the label widget """
         try:
             if image_path is not None:
                 self.original_phantom_image = cv2.imread(image_path, 0)
@@ -178,6 +179,7 @@ class MainWindow(QtWidgets.QMainWindow):
             print(e)
 
     def mousePressEvent(self, event):
+        """This function is called when the mouse is pressed."""
         try:
             if event.button() == Qt.LeftButton:
                 self.dragging = True
@@ -186,6 +188,7 @@ class MainWindow(QtWidgets.QMainWindow):
             print(e)
 
     def mouseReleaseEvent(self, event):
+        """This function is called when the mouse is released."""
         try:
             if event.button() == Qt.LeftButton:
                 self.dragging = False
@@ -194,6 +197,7 @@ class MainWindow(QtWidgets.QMainWindow):
             print(e)
 
     def mouseMoveEvent(self, event):
+        """This function is called when the mouse is moved."""
         try:
             self.scroll_flag = True
             if self.dragging:
@@ -229,6 +233,7 @@ class MainWindow(QtWidgets.QMainWindow):
             print(e)
 
     def handle_wheel_event(self, event):
+        """Handles the wheel event of the mouse"""
         try:
             self.scroll_flag = True
             # make a copy of  the original image to a new integer numpy array
@@ -260,6 +265,7 @@ class MainWindow(QtWidgets.QMainWindow):
             print(e)
 
     def handle_mouse_press(self, event):
+        """Handle mouse press event"""
         try:
             if not self.dragging:
                 if self.ui.comboBox.currentText() == 'Show Phantom Image':
@@ -303,6 +309,11 @@ class MainWindow(QtWidgets.QMainWindow):
             print(e)
 
     def modify_the_image_intensities_distribution(self, img_path='./images/shepp_logan_phantom/480px-Shepp_logan.png', image=None):
+        """This function modifies the image intensities distribution to match the most frequent intensities of the phantom image
+        Args:
+            img_path (str, optional): The path of the image. Defaults to './images/shepp_logan_phantom/480px-Shepp_logan.png'.
+            image (numpy array, optional): The image array. Defaults to None.
+        """
         try:
             if image is not None:
                 img = image
@@ -359,6 +370,7 @@ class MainWindow(QtWidgets.QMainWindow):
             print(e)
 
     def handle_image_features_combo_box(self):
+        """Handle the image features combo box"""
         try:
             if self.ui.comboBox.currentIndex() == 0:
                 self.show_image_on_label(self.image_path)
@@ -380,6 +392,7 @@ class MainWindow(QtWidgets.QMainWindow):
             print(e)
 
     def change_phantom_size(self):
+        """Change the size of the phantom image"""
         try:
             image = self.ui.phantom_image_label.pixmap().toImage()
             # convert the QImage to matrix
@@ -417,6 +430,7 @@ class MainWindow(QtWidgets.QMainWindow):
             print(e)
 
     def apply_noise(self, value):
+        """ Apply noise to the image """
         try:
             # Generate the noise
             noise = np.zeros_like(self.original_phantom_image)
@@ -430,6 +444,7 @@ class MainWindow(QtWidgets.QMainWindow):
             print(e)
 
     def reset_phantom_to_original(self):
+        """ Reset the phantom image to the original one """
         try:
             self.show_image_on_label(self.image_path)
             self.ui.horizontalSlider.setValue(0)
@@ -438,6 +453,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     # MRI Sequence
     def select_acquisition_system(self):
+        """ Select the acquisition system of the ksapce """
         try:
             viewer_system = self.select_viewer_system()
 
@@ -462,6 +478,7 @@ class MainWindow(QtWidgets.QMainWindow):
             print(e)
 
     def select_viewer_system(self):
+        """ Select the viewer system """
         try:
             if self.ui.comboBox_7.currentIndex() == 0:
                 return 1
@@ -471,6 +488,7 @@ class MainWindow(QtWidgets.QMainWindow):
             print(e)
 
     def create_cartesian_kspace(self):
+        """ Create cartesian kspace indices array """
         try:
             self.kspaceIndicesVisisted = np.array([], dtype=int)
             for i in range(0, self.phantom_image_resized.shape[0]):
@@ -484,6 +502,7 @@ class MainWindow(QtWidgets.QMainWindow):
             print(e)
 
     def create_spiral_kspace(self):
+        """ Create spiral kspace indices array """
         try:
             self.kspaceIndicesVisisted = np.array([], dtype=int)
             top = 0
@@ -530,6 +549,7 @@ class MainWindow(QtWidgets.QMainWindow):
             print(e)
 
     def create_zig_zag_kspace(self):
+        """ Create a zig zag kspace indices array"""
         try:
             self.kspaceIndicesVisisted = np.array([], dtype=int)
             n = len(self.phantom_image_resized)
@@ -552,6 +572,7 @@ class MainWindow(QtWidgets.QMainWindow):
             print(e)
 
     def create_radial_kspace(self):
+        """Create a radial kspace indices array"""
         try:
 
             self.kspaceIndicesVisisted = np.array([], dtype=int)
@@ -640,6 +661,7 @@ class MainWindow(QtWidgets.QMainWindow):
             print(e)
 
     def read_dial_values_and_calculate_ernst(self):
+        """Read the dial values and calculate the ernst angle"""
         try:
             tr_value = int(self.ui.dial.value())
             te_value = int(self.ui.dial_3.value())
@@ -656,6 +678,7 @@ class MainWindow(QtWidgets.QMainWindow):
             print(e)
 
     def apply_rf_pulse(self, image, flip_angle):
+        """Apply RF pulse to the phantom image"""
         try:
 
             if self.ui.comboBox_2.currentIndex() == 0:
@@ -751,6 +774,7 @@ class MainWindow(QtWidgets.QMainWindow):
             print(e)
 
     def apply_rf_gradient_sequence(self):
+        """Apply the RF pulse and gradient sequence to the phantom image"""
         try:
             viewer = self.select_viewer_system()
 
@@ -816,12 +840,14 @@ class MainWindow(QtWidgets.QMainWindow):
             print(e)
 
     def enhance_the_contrast_between_complex_matrix_values(self, matrix):
+        """ enhance the contrast between complex matrix values """
         matrix = np.abs(matrix)
         matrix = np.log(matrix + 1)
         matrix = matrix / np.max(matrix)
         return matrix
 
     def create_delay_recovery_matrix(self, t, i, j):
+        """ create the delay recovery matrix """
         t1_value = self.t1WeightedImage[i, j]
         t2_value = self.t2WeightedImage[i, j]
         return np.array([[np.exp(-t / t2_value), 0, 0],
@@ -829,6 +855,7 @@ class MainWindow(QtWidgets.QMainWindow):
                          [0, 0, (1 - np.exp(-t / t1_value))]])
 
     def update_kspace(self, kspace, viewerIndex=1):
+        """ update the kspace after applying the sequence """
         try:
             if viewerIndex == 1:
                 Kfigure = self.kspace_figure
@@ -852,6 +879,7 @@ class MainWindow(QtWidgets.QMainWindow):
             print(e)
 
     def update_image(self, kspace_2d, viewerIndex=1):
+        """ update the image after applying the sequence """
         try:
             if viewerIndex == 1:
                 Ifigure = self.reconstructed_image_figure
@@ -874,6 +902,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     # sequence plotting
     def browseFile(self):
+        """ browse for a json file """
         try:
             # get jason file data and store it in a variable
             self.fileName = QtWidgets.QFileDialog.getOpenFileName(
@@ -884,6 +913,7 @@ class MainWindow(QtWidgets.QMainWindow):
             print(e)
 
     def update(self):
+        """ update the graphs with the new datain the json file """
         try:
             # get the values from the dictionary
             self.data = json.load(open(self.fileName[0]))
@@ -902,6 +932,7 @@ class MainWindow(QtWidgets.QMainWindow):
             print(e)
 
     def cleanGraphs(self):
+        """ clear the graphs """
         try:
             self.RFplotter.clear()
             self.GSSplotter.clear()
@@ -912,6 +943,7 @@ class MainWindow(QtWidgets.QMainWindow):
             print(e)
 
     def prebGraphData(self, start, amp, num=1, function=half_sin_wave, repPerPlace=1, elevation=0, step=1, oscillation=False):
+        """ plotting the prep pulses to the graph """
         try:
             yAxiesVal = []
             xAxiesVal = []
@@ -942,6 +974,7 @@ class MainWindow(QtWidgets.QMainWindow):
             print(e)
 
     def data_plotter(self, plotter, start, amp, num, function, elevation, repPerPlace=1, leftLine=False, rightLine=False, oscillation=False):
+        """ plotting data to the graph """
         try:
             xAxiesVal, yAxiesVal = self.prebGraphData(
                 start, amp, num, function, repPerPlace=repPerPlace, elevation=elevation, oscillation=oscillation)
@@ -957,6 +990,8 @@ class MainWindow(QtWidgets.QMainWindow):
             print(e)
 
     def plot_appender(self, plotter, start, amp, function, elevation, repPerPlace=1, leftLine=False, rightLine=False, oscillation=False, num=1):
+        """ plotting data to the graph without clearing the previous data """
+
         try:
             originalXAxiesData, originalYAxiesData = plotter.getData()
 
@@ -984,6 +1019,7 @@ class MainWindow(QtWidgets.QMainWindow):
             print(e)
 
     def text_plotter(self, text, x, y):
+        """Plot text on the plot"""
         try:
             self.text1 = pg.TextItem(text, anchor=(0, 0))
             self.text1.setPos(x, y)
@@ -992,6 +1028,7 @@ class MainWindow(QtWidgets.QMainWindow):
             print(e)
 
     def text_cleaner(self):
+        """Clean the text from the plot"""
         try:
             for item in self.ui.signalPlot.items():
                 if isinstance(item, pg.TextItem):
@@ -1000,6 +1037,7 @@ class MainWindow(QtWidgets.QMainWindow):
             print(e)
 
     def plot_GRE_sequence(self):
+        """Plot the GRE sequence"""
         try:
             self.cleanGraphs()
             self.text_cleaner()
@@ -1038,6 +1076,7 @@ class MainWindow(QtWidgets.QMainWindow):
             print(e)
 
     def plot_SE_sequence(self):
+        """Plot SE sequence"""
         try:
             self.cleanGraphs()
             self.text_cleaner()
@@ -1078,6 +1117,7 @@ class MainWindow(QtWidgets.QMainWindow):
             print(e)
 
     def plot_SSFP_sequence(self):
+        """Plots the SSFP sequence"""
         try:
             self.cleanGraphs()
             self.text_cleaner()
@@ -1130,6 +1170,7 @@ class MainWindow(QtWidgets.QMainWindow):
             print(e)
 
     def plot_chosen_sequence(self):
+        """Plot the chosen sequence according to the comboBox_4"""
         try:
             if self.ui.comboBox_4.currentText() == "GRE":
                 self.plot_GRE_sequence()
@@ -1142,6 +1183,7 @@ class MainWindow(QtWidgets.QMainWindow):
             print(e)
 
     def plot_T1_prep(self):
+        """Plot the T1 preparation sequence"""
         try:
             self.plot_chosen_sequence()
             parameter = self.ui.lineEdit_2.text()
@@ -1162,6 +1204,7 @@ class MainWindow(QtWidgets.QMainWindow):
             print(e)
 
     def plot_T2_prep(self):
+        """Plot the T2 preparation sequence"""
         try:
             self.plot_chosen_sequence()
 
@@ -1186,6 +1229,7 @@ class MainWindow(QtWidgets.QMainWindow):
             print(e)
 
     def plot_tagging_prep(self):
+        """Plot the tagging preparation sequence"""
         try:
             self.plot_chosen_sequence()
 
@@ -1218,6 +1262,7 @@ class MainWindow(QtWidgets.QMainWindow):
             print(e)
 
     def plot_chosen_prep_pulse(self):
+        """This function plots the chosen preparation pulse"""
         try:
             if self.ui.comboBox_5.currentIndex() == 0:
                 return
@@ -1236,6 +1281,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.popUpErrorMsg("Error", "You must choose a sequence first")
 
     def plot_prep_and_aquisition_titles(self):
+        """This function plots the titles of the preparation and aquisition system"""
         try:
             self.text_plotter("Preparation Pulse", -3, 12.5)
             self.text_plotter("Aquisition System", 2, 12.5)
@@ -1245,6 +1291,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
     # preparation pulses parameters:
     def handle_preparation_sequence_combo_box(self):
+        """This function handles the preparation sequence combo box
+        and shows the relevant parameters for each sequence"""
         currentIndexofPrepSequence = self.ui.comboBox_5.currentIndex()
         if currentIndexofPrepSequence == 0:
             self.hideAllPrepParameters()
@@ -1256,6 +1304,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.tagging_prep_parameters()
 
     def hideAllPrepParameters(self):
+        """This function hides all the preparation parameters"""
         self.ui.label_25.hide()
         self.ui.label_26.hide()
         self.ui.label_27.hide()
@@ -1266,6 +1315,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.lineEdit_5.hide()
 
     def T1_prep_parameters(self):
+        """This function shows the T1 preparation parameters"""
         self.ui.label_26.hide()
         self.ui.label_27.hide()
         self.ui.label_28.hide()
@@ -1277,6 +1327,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.lineEdit_2.show()
 
     def T2_prep_parameters(self):
+        """This function shows the T2 preparation parameters"""
         self.ui.label_25.hide()
         self.ui.lineEdit_2.hide()
         self.ui.label_27.hide()
@@ -1288,6 +1339,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.lineEdit_3.show()
 
     def tagging_prep_parameters(self):
+        """This function shows the tagging preparation parameters"""
         self.ui.label_25.hide()
         self.ui.lineEdit_2.hide()
         self.ui.label_26.hide()
@@ -1299,7 +1351,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.lineEdit_5.show()
 
     # assistive functions:
-
     def popUpErrorMsg(self, title, body):
         try:
             msgBox = QMessageBox()
