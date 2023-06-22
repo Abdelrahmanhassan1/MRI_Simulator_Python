@@ -150,6 +150,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.comboBox_5.currentIndexChanged.connect(
             self.handle_preparation_sequence_combo_box)
 
+        self.inversionDelay_T1 = -2
+        self.duration_T2prep = -4
+        self.tagWidth_Tagging = -5
+
     @ QtCore.pyqtSlot()
     def show_image_on_label(self, image_path, image=None):
         try:
@@ -801,8 +805,19 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 self.update_kspace(k_space, viewer)
                 self.update_image(k_space_2d, viewer)
+
+            matrix = self.enhance_the_contrast_between_complex_matrix_values(
+                k_space)
+            self.update_kspace(matrix, viewer)
+
         except Exception as e:
             print(e)
+
+    def enhance_the_contrast_between_complex_matrix_values(self, matrix):
+        matrix = np.abs(matrix)
+        matrix = np.log(matrix + 1)
+        matrix = matrix / np.max(matrix)
+        return matrix
 
     def create_delay_recovery_matrix(self, t, i, j):
         t1_value = self.t1WeightedImage[i, j]
@@ -1127,11 +1142,18 @@ class MainWindow(QtWidgets.QMainWindow):
     def plot_T1_prep(self):
         try:
             self.plot_chosen_sequence()
+            parameter = self.ui.lineEdit_2.text()
+            if parameter != "":
+                parameter = int(parameter)
+            else:
+                parameter = 0
 
             # RF pulse
-            self.plot_appender(self.RFplotter, -2, 1, half_sin_wave, 10)
+            self.plot_appender(
+                self.RFplotter, self.inversionDelay_T1 - parameter, 1, half_sin_wave, 10)
 
-            self.text_plotter("180°", -1.8, 10.5)
+            self.text_plotter(
+                "180°", self.inversionDelay_T1 + 0.2 - parameter, 10.5)
 
             self.plot_prep_and_aquisition_titles()
         except Exception as e:
@@ -1141,12 +1163,21 @@ class MainWindow(QtWidgets.QMainWindow):
         try:
             self.plot_chosen_sequence()
 
-            # RF pulse
-            self.plot_appender(self.RFplotter, -4, 1, half_sin_wave, 10)
-            self.plot_appender(self.RFplotter, -2, 1, half_sin_wave, 10)
+            parameter = self.ui.lineEdit_3.text()
+            if parameter != "":
+                parameter = int(parameter)
+            else:
+                parameter = 0
 
-            self.text_plotter("90°", -3.8, 10.5)
-            self.text_plotter("-90°", -1.8, 10.5)
+            # RF pulse
+            self.plot_appender(
+                self.RFplotter, self.duration_T2prep - parameter, 1, half_sin_wave, 10)
+            self.plot_appender(
+                self.RFplotter, self.duration_T2prep + 2, 1, half_sin_wave, 10)
+
+            self.text_plotter("90°", self.duration_T2prep +
+                              0.2 - parameter, 10.5)
+            self.text_plotter("-90°", self.duration_T2prep + 2.2, 10.5)
 
             self.plot_prep_and_aquisition_titles()
         except Exception as e:
@@ -1156,18 +1187,26 @@ class MainWindow(QtWidgets.QMainWindow):
         try:
             self.plot_chosen_sequence()
 
+            parameter = self.ui.lineEdit_5.text()
+            if parameter != "":
+                parameter = int(parameter)
+            else:
+                parameter = 0
             # RF pulse
-            self.plot_appender(self.RFplotter, -5, 1, half_sin_wave, 10)
-            self.plot_appender(self.RFplotter, -3, 1, half_sin_wave, 10)
+            self.plot_appender(
+                self.RFplotter, self.tagWidth_Tagging - parameter, 1, half_sin_wave, 10)
+            self.plot_appender(
+                self.RFplotter, self.tagWidth_Tagging + 2, 1, half_sin_wave, 10)
 
             # GFE pulse
-            self.plot_appender(self.GFEplotter, -4, 1,
+            self.plot_appender(self.GFEplotter, self.tagWidth_Tagging + 1 - parameter, 1,
                                flat_line, 2.5, leftLine=True, rightLine=True)
-            self.plot_appender(self.GFEplotter, -2, 1,
+            self.plot_appender(self.GFEplotter, self.tagWidth_Tagging + 3, 1,
                                flat_line, 2.5, leftLine=True, rightLine=True)
 
-            self.text_plotter("90°", -4.8, 10.5)
-            self.text_plotter("-90°", -2.8, 10.5)
+            self.text_plotter("90°", self.tagWidth_Tagging +
+                              0.2 - parameter, 10.5)
+            self.text_plotter("-90°", self.tagWidth_Tagging+2.2, 10.5)
 
             self.text_plotter("Spoiler Gradient", -2.5, 4)
 
