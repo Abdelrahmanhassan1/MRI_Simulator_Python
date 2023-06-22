@@ -114,6 +114,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # set the x axis label
         self.ui.signalPlot.plotItem.getAxis('bottom').setLabel('Time (ms)')
 
+        # set the plotters
         self.RFplotter = self.ui.signalPlot.plot([], [], pen=self.redPen)
         self.GSSplotter = self.ui.signalPlot.plot([], [], pen=self.greenPen)
         self.GPEplotter = self.ui.signalPlot.plot([], [], pen=self.bluePen)
@@ -129,10 +130,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.TR_horizontal_line = self.ui.signalPlot.plot(
             [], [], pen=self.whitePen)
 
+        # connecting buttons to functions
         self.ui.browseFileBtn.released.connect(self.browseFile)
         self.ui.updateBtn.released.connect(self.update)
 
-        # RF and Gradient
         self.ui.pushButton_2.released.connect(self.apply_rf_gradient_sequence)
 
         self.read_dial_values_and_calculate_ernst()
@@ -150,6 +151,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.comboBox_5.currentIndexChanged.connect(
             self.handle_preparation_sequence_combo_box)
 
+        # intial parameters
         self.inversionDelay_T1 = -2
         self.duration_T2prep = -4
         self.tagWidth_Tagging = -5
